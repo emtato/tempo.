@@ -616,7 +616,6 @@ export default function CalendarApp() {
 
             const restoreAnchor = (liveScroller: HTMLElement, anchorRow?: HTMLElement) => {
                 applyMonthViewportAnchor(liveScroller, anchor, anchorRow)
-                setCalendarToolbarTitle(calendarMainRef.current, activeMonth)
             }
 
             const firstDateBeforeRecenter = getFirstRenderedDate(scroller)
