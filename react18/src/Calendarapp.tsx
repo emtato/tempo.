@@ -264,6 +264,7 @@ export default function CalendarApp() {
     const [loginChosen, setLoginChosen] = useState(() => localStorage.getItem("intro-seen") === "true") //state to track which login button was chosen: from intro's signup or login
     //logic: if intro page will not be shown (page viewed before), ONLY login button is clickable. so if seen, state should be true
     const prevMonthCentreRef = useRef(new Date())
+    const rangeRecenterInProgressRef = useRef(false)
 
     const scrollVisibleMonth = useCallback((offset: number) => {
         const targetMonth = new Date(arrowTargetMonthRef.current ?? visibleMonthRef.current)
@@ -452,14 +453,19 @@ export default function CalendarApp() {
 
     function scrollCalendar(activeMonth: Date) { //logic for scrolling month: updates range of months (if applicable) and sets title
         //generate new list of months when we reach 1-2 months of the original scrollingmonth end range
+        if (rangeRecenterInProgressRef.current) return
+
         const monthDifference =
             (activeMonth.getFullYear() - prevMonthCentreRef.current.getFullYear()) * 12
             + activeMonth.getMonth() - prevMonthCentreRef.current.getMonth() //using month difference to calculate when to rerender
 
         if (Math.abs(monthDifference) >= 5) {//roughly 5 months, generate new centre + months
-            prevMonthCentreRef.current = activeMonth
             const calendarApi = calendarComponentRef.current?.getApi()
-            calendarApi?.gotoDate(activeMonth) //sets new month to generate visibleRange around
+            if (!calendarApi) return
+
+            rangeRecenterInProgressRef.current = true
+            prevMonthCentreRef.current = activeMonth
+            calendarApi.gotoDate(activeMonth) //sets new month to generate visibleRange around
         }
     }
 
@@ -894,6 +900,16 @@ export default function CalendarApp() {
                         const enteredScrollingMonth = dateInfo.view.type === SCROLLING_MONTH_VIEW &&
                             lastCalendarViewRef.current !== SCROLLING_MONTH_VIEW
                         lastCalendarViewRef.current = dateInfo.view.type
+
+                        if (rangeRecenterInProgressRef.current) {
+                            // FullCalendar can emit scroll events while applying the new range.
+                            // Keep those events from starting a second gotoDate feedback loop.
+                            window.requestAnimationFrame(() => {
+                                window.requestAnimationFrame(() => {
+                                    rangeRecenterInProgressRef.current = false
+                                })
+                            })
+                        }
 
                         if (dateInfo.view.type !== SCROLLING_MONTH_VIEW) {
                             window.requestAnimationFrame(() => {
