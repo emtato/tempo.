@@ -919,7 +919,13 @@ export default function CalendarApp() {
                                     : event.deltaMode === WheelEvent.DOM_DELTA_PAGE
                                         ? event.deltaY * scroller.clientHeight
                                         : event.deltaY
-                                pendingRangeAnchor.offsetFromScrollerTop -= scrollDelta
+                                // A rebuilt range can temporarily be close to scrollTop 0. Do not
+                                // move the saved anchor by upward wheel distance the scroller could
+                                // not actually consume, or March can restore at the range's October edge.
+                                const appliedScrollDelta = scrollDelta < 0
+                                    ? Math.max(scrollDelta, -scroller.scrollTop)
+                                    : scrollDelta
+                                pendingRangeAnchor.offsetFromScrollerTop -= appliedScrollDelta
                             }
                             programmaticSmoothScrollRef.current = false
                             window.clearTimeout(programmaticSmoothEndTimerRef.current)
