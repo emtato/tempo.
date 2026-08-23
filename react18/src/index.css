@@ -84,6 +84,14 @@ h2 {
     font-weight: 700;
 }
 
+.calendar-month-weeks {
+    scrollbar-width: none;
+}
+
+.calendar-month-weeks::-webkit-scrollbar {
+    display: none; /* remove scrollbar */
+}
+
 @container (max-width: 55em) {
     .calendar-toolbar {
         display: grid !important;

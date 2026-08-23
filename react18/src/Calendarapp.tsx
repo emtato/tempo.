@@ -452,12 +452,11 @@ export default function CalendarApp() {
 
     function scrollCalendar(activeMonth: Date) { //logic for scrolling month: updates range of months (if applicable) and sets title
         //generate new list of months when we reach 1-2 months of the original scrollingmonth end range
+        const monthDifference =
+            (activeMonth.getFullYear() - prevMonthCentreRef.current.getFullYear()) * 12
+            + activeMonth.getMonth() - prevMonthCentreRef.current.getMonth() //using month difference to calculate when to rerender
 
-        const res = +activeMonth - +prevMonthCentreRef.current; // dif in milliseconds (+ converts date into ms)
-
-        const days = res / 1000 / 60 / 60 / 24;
-
-        if (Math.abs(days) >= 150) {//roughly 5 months, generate new centre + months
+        if (Math.abs(monthDifference) >= 5) {//roughly 5 months, generate new centre + months
             prevMonthCentreRef.current = activeMonth
             const calendarApi = calendarComponentRef.current?.getApi()
             calendarApi?.gotoDate(activeMonth) //sets new month to generate visibleRange around
