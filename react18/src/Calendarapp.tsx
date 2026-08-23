@@ -1157,7 +1157,7 @@ export default function CalendarApp() {
                     selectMinDistance={10}
                     selectable
                     selectMirror
-                    dayMaxEvents
+                    dayMaxEvents={5}
                     singleMonthClass={hideUnmeasuredMonth}
                     dayCellClass={(dayInfo) => {
                         const cellDate = toLocalDateString(dayInfo.date)
