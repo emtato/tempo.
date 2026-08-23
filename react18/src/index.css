@@ -85,6 +85,7 @@ h2 {
 }
 
 .calendar-month-weeks {
+    overflow-anchor: none;
     scrollbar-width: none;
 }
 

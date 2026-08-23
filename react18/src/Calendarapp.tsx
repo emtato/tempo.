@@ -36,6 +36,11 @@ interface HighlightedRange {
     end: string
 }
 
+interface MonthScrollAnchor {
+    date: Date
+    offsetFromScrollerTop: number
+}
+
 export interface DeletedEvent {
     id: string
     title: string
@@ -94,6 +99,7 @@ const CALENDAR_VIEWS = {
             }
         },
         dateIncrement: {months: 1},
+        scrollTimeReset: false,
         aspectRatio: 1.4,
         dayNarrowWidth: 0,
         className: 'scrolling-month-measuring',
@@ -250,6 +256,7 @@ export default function CalendarApp() {
     const monthScrollCleanupRef = useRef<() => void>(() => undefined)
     const scrollToMonthRef = useRef<(date: Date, behavior?: ScrollBehavior) => void>(() => undefined)
     const alignMonthViewRef = useRef<() => void>(() => undefined)
+    const restoreRangeAnchorRef = useRef<(anchor: MonthScrollAnchor) => void>(() => undefined)
     const visibleMonthRef = useRef(new Date())
     const lastCalendarViewRef = useRef('')
     const arrowTargetMonthRef = useRef<Date | null>(null)
@@ -264,6 +271,12 @@ export default function CalendarApp() {
     const [loginChosen, setLoginChosen] = useState(() => localStorage.getItem("intro-seen") === "true") //state to track which login button was chosen: from intro's signup or login
     //logic: if intro page will not be shown (page viewed before), ONLY login button is clickable. so if seen, state should be true
     const prevMonthCentreRef = useRef(new Date())
+    const monthScrollReadyRef = useRef(false)
+    const rangeUpdateInProgressRef = useRef(false)
+    const rangeRestoreScheduledRef = useRef(false)
+    const pendingRangeAnchorRef = useRef<MonthScrollAnchor | null>(null)
+    const programmaticSmoothScrollRef = useRef(false)
+    const programmaticSmoothEndTimerRef = useRef(0)
 
     const scrollVisibleMonth = useCallback((offset: number) => {
         const targetMonth = new Date(arrowTargetMonthRef.current ?? visibleMonthRef.current)
@@ -450,16 +463,52 @@ export default function CalendarApp() {
         }
     }, [userId, isPending])
 
-    function scrollCalendar(activeMonth: Date) { //logic for scrolling month: updates range of months (if applicable) and sets title
+    function scrollCalendar(
+        activeMonth: Date,
+        activeScroller?: HTMLElement,
+        activeMonthOffset?: number,
+    ) { //logic for scrolling month: updates range of months (if applicable) and sets title
         //generate new list of months when we reach 1-2 months of the original scrollingmonth end range
+        if (!monthScrollReadyRef.current || rangeUpdateInProgressRef.current) return
+
         const monthDifference =
             (activeMonth.getFullYear() - prevMonthCentreRef.current.getFullYear()) * 12
             + activeMonth.getMonth() - prevMonthCentreRef.current.getMonth() //using month difference to calculate when to rerender
 
         if (Math.abs(monthDifference) >= 5) {//roughly 5 months, generate new centre + months
-            prevMonthCentreRef.current = activeMonth
+            const scroller = activeScroller ??
+                calendarMainRef.current?.querySelector<HTMLElement>('.calendar-month-weeks')
+            const month = toLocalDateString(activeMonth).slice(0, 7)
+            const monthCell = scroller?.querySelector<HTMLElement>(
+                `[role="gridcell"][data-date="${month}-01"]`,
+            )
+            const monthRow = monthCell?.closest<HTMLElement>('[role="row"]')
             const calendarApi = calendarComponentRef.current?.getApi()
-            calendarApi?.gotoDate(activeMonth) //sets new month to generate visibleRange around
+
+            if (!calendarApi) return
+
+            if (programmaticSmoothScrollRef.current && scroller) {
+                programmaticSmoothScrollRef.current = false
+                window.clearTimeout(programmaticSmoothEndTimerRef.current)
+                scroller.scrollTo({top: scroller.scrollTop, behavior: 'auto'})
+            }
+
+            rangeUpdateInProgressRef.current = true
+            prevMonthCentreRef.current = activeMonth
+            pendingRangeAnchorRef.current = {
+                date: new Date(activeMonth.getFullYear(), activeMonth.getMonth(), 1),
+                offsetFromScrollerTop: activeMonthOffset ??
+                    (scroller && monthRow
+                        ? monthRow.getBoundingClientRect().top - scroller.getBoundingClientRect().top
+                        : 0),
+            }
+            console.log('scroll-range-debug', JSON.stringify({
+                phase: 'capture',
+                month: toLocalDateString(activeMonth),
+                offset: pendingRangeAnchorRef.current.offsetFromScrollerTop,
+                scrollTop: scroller?.scrollTop,
+            }))
+            calendarApi.gotoDate(activeMonth) //sets new month to generate visibleRange around
         }
     }
 
@@ -759,8 +808,15 @@ export default function CalendarApp() {
                         const scroller = viewInfo.el.querySelector<HTMLElement>('.calendar-month-weeks')
                         if (!scroller) return
                         const today = new Date()
-                        setToolbarTitle(formatMonthTitle(today))
-                        scrollCalendar(today)
+                        console.log('scroll-range-debug', JSON.stringify({
+                            phase: 'viewDidMount',
+                            rangeUpdateInProgress: rangeUpdateInProgressRef.current,
+                            lastView: lastCalendarViewRef.current,
+                        }))
+                        if (!rangeUpdateInProgressRef.current) {
+                            setToolbarTitle(formatMonthTitle(today))
+                            scrollCalendar(today)
+                        }
 
                         const updateTitle = () => {
                             const scrollerTop = scroller.getBoundingClientRect().top //screen position at top of calendar edge
@@ -793,9 +849,16 @@ export default function CalendarApp() {
                             if (month) {
                                 const [year, monthIndex] = month.split('-').map(Number)
                                 const activeMonth = new Date(year, monthIndex - 1, 1)
+                                const activeMonthRow = activeMonthCell?.closest<HTMLElement>('[role="row"]')
                                 visibleMonthRef.current = activeMonth
                                 setToolbarTitle(formatMonthTitle(activeMonth))
-                                scrollCalendar(activeMonth)
+                                scrollCalendar(
+                                    activeMonth,
+                                    scroller,
+                                    activeMonthRow
+                                        ? activeMonthRow.getBoundingClientRect().top - scroller.getBoundingClientRect().top
+                                        : undefined,
+                                )
                             }
                         }
 
@@ -810,20 +873,39 @@ export default function CalendarApp() {
                             const top = monthStartRow.offsetTop
                             visibleMonthRef.current = activeMonth
                             setToolbarTitle(formatMonthTitle(activeMonth))
-                            scrollCalendar(activeMonth)
 
                             if (behavior === 'smooth') {
+                                programmaticSmoothScrollRef.current = true
+                                window.clearTimeout(programmaticSmoothEndTimerRef.current)
                                 scroller.scrollTo({top, behavior})
                             } else {
                                 scroller.scrollTop = top
+                                scrollCalendar(
+                                    activeMonth,
+                                    scroller,
+                                    monthStartRow.getBoundingClientRect().top - scroller.getBoundingClientRect().top,
+                                )
                             }
                             return monthStartRow.getBoundingClientRect().height >= firstDayCell.getBoundingClientRect().width * 0.75
                         }
 
                         let scrollEndTimer = 0
                         const handleScroll = () => {
+                            console.log('scroll-range-debug', JSON.stringify({
+                                phase: 'scroll',
+                                scrollTop: scroller.scrollTop,
+                                rangeUpdateInProgress: rangeUpdateInProgressRef.current,
+                                programmaticSmooth: programmaticSmoothScrollRef.current,
+                            }))
+                            if (programmaticSmoothScrollRef.current) {
+                                window.clearTimeout(programmaticSmoothEndTimerRef.current)
+                                programmaticSmoothEndTimerRef.current = window.setTimeout(() => {
+                                    programmaticSmoothScrollRef.current = false
+                                }, 150)
+                            }
                             updateTitle()
                             window.clearTimeout(scrollEndTimer)
+                            if (rangeUpdateInProgressRef.current) return
                             scrollEndTimer = window.setTimeout(() => { //scroll snap to start of months
                                 const scrollerTop = scroller.getBoundingClientRect().top
 
@@ -846,6 +928,25 @@ export default function CalendarApp() {
                             }, 100)
                         }
 
+                        const handleWheel = (event: WheelEvent) => {
+                            const pendingRangeAnchor = pendingRangeAnchorRef.current
+                            if (rangeUpdateInProgressRef.current && pendingRangeAnchor) {
+                                const scrollDelta = event.deltaMode === WheelEvent.DOM_DELTA_LINE
+                                    ? event.deltaY * 16
+                                    : event.deltaMode === WheelEvent.DOM_DELTA_PAGE
+                                        ? event.deltaY * scroller.clientHeight
+                                        : event.deltaY
+                                pendingRangeAnchor.offsetFromScrollerTop -= scrollDelta
+                                console.log('scroll-range-debug', JSON.stringify({
+                                    phase: 'wheel',
+                                    scrollDelta,
+                                    savedOffset: pendingRangeAnchor.offsetFromScrollerTop,
+                                }))
+                            }
+                            programmaticSmoothScrollRef.current = false
+                            window.clearTimeout(programmaticSmoothEndTimerRef.current)
+                        }
+
                         let alignmentFrame = 0
                         const alignCurrentMonth = () => {
                             window.cancelAnimationFrame(alignmentFrame)
@@ -862,18 +963,78 @@ export default function CalendarApp() {
                                 if (framesRemaining-- > 0) {
                                     alignmentFrame = window.requestAnimationFrame(align)
                                 } else {
+                                    monthScrollReadyRef.current = true
                                     viewInfo.el.classList.remove('scrolling-month-measuring')
                                 }
                             }
                             align()
                         }
+
+                        const restoreRangeAnchor = (anchor: MonthScrollAnchor) => {
+                            window.cancelAnimationFrame(alignmentFrame)
+                            window.clearTimeout(scrollEndTimer)
+                            let framesRemaining = 12
+
+                            const restore = () => {
+                                if (lastCalendarViewRef.current &&
+                                    lastCalendarViewRef.current !== SCROLLING_MONTH_VIEW) {
+                                    rangeUpdateInProgressRef.current = false
+                                    return
+                                }
+
+                                const month = toLocalDateString(anchor.date).slice(0, 7)
+                                const monthCell = scroller.querySelector<HTMLElement>(
+                                    `[role="gridcell"][data-date="${month}-01"]`,
+                                )
+                                const monthRow = monthCell?.closest<HTMLElement>('[role="row"]')
+
+                                if (!monthCell || !monthRow) {
+                                    if (framesRemaining-- > 0) {
+                                        alignmentFrame = window.requestAnimationFrame(restore)
+                                    } else {
+                                        monthScrollReadyRef.current = true
+                                        rangeUpdateInProgressRef.current = false
+                                        viewInfo.el.classList.remove('scrolling-month-measuring')
+                                    }
+                                    return
+                                }
+
+                                const currentOffset =
+                                    monthRow.getBoundingClientRect().top - scroller.getBoundingClientRect().top
+                                console.log('scroll-range-debug', JSON.stringify({
+                                    phase: 'restore',
+                                    month: toLocalDateString(anchor.date),
+                                    savedOffset: anchor.offsetFromScrollerTop,
+                                    currentOffset,
+                                    scrollTop: scroller.scrollTop,
+                                }))
+                                scroller.scrollTop += currentOffset - anchor.offsetFromScrollerTop
+                                visibleMonthRef.current = anchor.date
+                                setToolbarTitle(formatMonthTitle(anchor.date))
+                                viewInfo.el.classList.remove('scrolling-month-measuring')
+
+                                alignmentFrame = window.requestAnimationFrame(() => {
+                                    console.log('scroll-range-debug', JSON.stringify({phase: 'restore-unlock'}))
+                                    monthScrollReadyRef.current = true
+                                    rangeUpdateInProgressRef.current = false
+                                    updateTitle()
+                                })
+                            }
+
+                            restore()
+                        }
                         scroller.addEventListener('scroll', handleScroll, {passive: true})
+                        scroller.addEventListener('wheel', handleWheel, {passive: true})
                         alignMonthViewRef.current = alignCurrentMonth
+                        restoreRangeAnchorRef.current = restoreRangeAnchor
                         scrollToMonthRef.current = (date, behavior) => {
                             window.cancelAnimationFrame(alignmentFrame)
                             scrollToMonth(date, behavior)
                         }
-                        alignCurrentMonth()
+                        if (!rangeUpdateInProgressRef.current) {
+                            console.log('scroll-range-debug', JSON.stringify({phase: 'align-current-month'}))
+                            alignCurrentMonth()
+                        }
 
                         monthScrollCleanupRef.current = () => {
                             window.cancelAnimationFrame(alignmentFrame)
@@ -881,7 +1042,13 @@ export default function CalendarApp() {
                             arrowTargetMonthRef.current = null
                             viewInfo.el.classList.add('scrolling-month-measuring')
                             scroller.removeEventListener('scroll', handleScroll)
+                            scroller.removeEventListener('wheel', handleWheel)
                             window.clearTimeout(scrollEndTimer)
+                            window.clearTimeout(programmaticSmoothEndTimerRef.current)
+                            programmaticSmoothScrollRef.current = false
+                            if (!rangeUpdateInProgressRef.current) {
+                                monthScrollReadyRef.current = false
+                            }
                         }
                     }}
                     viewWillUnmount={(viewInfo) => {
@@ -893,9 +1060,19 @@ export default function CalendarApp() {
                         setCalendarView(dateInfo.view.type)
                         const enteredScrollingMonth = dateInfo.view.type === SCROLLING_MONTH_VIEW &&
                             lastCalendarViewRef.current !== SCROLLING_MONTH_VIEW
+                        console.log('scroll-range-debug', JSON.stringify({
+                            phase: 'datesSet',
+                            enteredScrollingMonth,
+                            rangeUpdateInProgress: rangeUpdateInProgressRef.current,
+                            pendingAnchor: Boolean(pendingRangeAnchorRef.current),
+                        }))
                         lastCalendarViewRef.current = dateInfo.view.type
 
                         if (dateInfo.view.type !== SCROLLING_MONTH_VIEW) {
+                            monthScrollReadyRef.current = false
+                            rangeUpdateInProgressRef.current = false
+                            rangeRestoreScheduledRef.current = false
+                            pendingRangeAnchorRef.current = null
                             window.requestAnimationFrame(() => {
                                 if (lastCalendarViewRef.current !== dateInfo.view.type) return
 
@@ -906,6 +1083,28 @@ export default function CalendarApp() {
                                 toolbarTitle.textContent = dateInfo.view.type === 'multiMonthYear'
                                     ? String(dateInfo.view.currentStart.getFullYear())
                                     : dateInfo.view.title
+                            })
+                            return
+                        }
+
+                        const pendingRangeAnchor = pendingRangeAnchorRef.current
+                        if (pendingRangeAnchor) {
+                            if (rangeRestoreScheduledRef.current) return
+                            rangeRestoreScheduledRef.current = true
+                            window.requestAnimationFrame(() => {
+                                rangeRestoreScheduledRef.current = false
+                                if (lastCalendarViewRef.current === SCROLLING_MONTH_VIEW) {
+                                    const latestRangeAnchor = pendingRangeAnchorRef.current
+                                    pendingRangeAnchorRef.current = null
+                                    if (latestRangeAnchor) {
+                                        restoreRangeAnchorRef.current(latestRangeAnchor)
+                                    } else {
+                                        rangeUpdateInProgressRef.current = false
+                                    }
+                                } else {
+                                    pendingRangeAnchorRef.current = null
+                                    rangeUpdateInProgressRef.current = false
+                                }
                             })
                             return
                         }
