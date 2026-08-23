@@ -73,6 +73,11 @@ const DEFAULT_START_TIME = 9 * 60
 const DEFAULT_END_TIME = 10 * 60
 const DRAFT_EVENT_ID = 'draft-event'
 const SCROLLING_MONTH_VIEW = 'scrollingMonth'
+const MONTH_SCROLLER_SELECTOR = '.calendar-month-weeks'
+const DATE_CELL_SELECTOR = '[role="gridcell"][data-date]'
+const RANGE_RECENTER_THRESHOLD_MONTHS = 5
+const RANGE_RESTORE_RETRIES = 2
+const NOOP = () => undefined
 
 const CALENDAR_PLUGINS = [themePlugin, dayGridPlugin, timeGridPlugin, multiMonthPlugin, interactionPlugin]
 
@@ -128,6 +133,75 @@ const CALENDAR_VIEWS = {
 
 function formatMonthTitle(date: Date) {
     return monthTitleFormatter.format(date)
+}
+
+// ----------------------------------------------------
+// Infinite month scrolling
+// ----------------------------------------------------
+
+function fromLocalDateString(dateString: string | undefined) {
+    if (!dateString) return null
+
+    const [year, month, day] = dateString.split('-').map(Number)
+    return year && month && day
+        ? new Date(year, month - 1, day)
+        : null
+}
+
+function findMonthScroller(root: ParentNode | null) {
+    return root?.querySelector<HTMLElement>(MONTH_SCROLLER_SELECTOR) ?? null
+}
+
+function getFirstRenderedDate(scroller: HTMLElement) {
+    return scroller.querySelector<HTMLElement>(DATE_CELL_SELECTOR)?.dataset.date
+}
+
+function findDateRow(scroller: HTMLElement, date: Date) {
+    const dateString = toLocalDateString(date)
+    return scroller
+        .querySelector<HTMLElement>(`[role="gridcell"][data-date="${dateString}"]`)
+        ?.closest<HTMLElement>('[role="row"]') ?? null
+}
+
+function getMonthViewportAnchor(
+    scroller: HTMLElement,
+    scrollerBounds: DOMRect,
+    fallbackDate: Date,
+): MonthViewportAnchor {
+    for (const row of scroller.querySelectorAll<HTMLElement>('[role="row"]')) {
+        const rowBounds = row.getBoundingClientRect()
+        const intersectsScrollerTop = rowBounds.top <= scrollerBounds.top + 1 &&
+            rowBounds.bottom > scrollerBounds.top + 1
+        if (!intersectsScrollerTop) continue
+
+        const rowDate = fromLocalDateString(
+            row.querySelector<HTMLElement>(DATE_CELL_SELECTOR)?.dataset.date,
+        )
+        return {
+            date: rowDate ?? fallbackDate,
+            offsetFromScrollerTop: rowBounds.top - scrollerBounds.top,
+        }
+    }
+
+    return {date: fallbackDate, offsetFromScrollerTop: 0}
+}
+
+function getWheelPixelDelta(event: WheelEvent, pageHeight: number) {
+    if (event.deltaMode === WheelEvent.DOM_DELTA_LINE) return event.deltaY * 16
+    if (event.deltaMode === WheelEvent.DOM_DELTA_PAGE) return event.deltaY * pageHeight
+    return event.deltaY
+}
+
+function applyMonthViewportAnchor(
+    scroller: HTMLElement,
+    anchor: MonthViewportAnchor,
+    anchorRow = findDateRow(scroller, anchor.date),
+) {
+    if (!anchorRow) return
+
+    const currentOffset = anchorRow.getBoundingClientRect().top -
+        scroller.getBoundingClientRect().top
+    scroller.scrollTop += currentOffset - anchor.offsetFromScrollerTop
 }
 
 function formatEventTime(date: Date) {
@@ -252,9 +326,9 @@ export default function CalendarApp() {
     const [allDay, setAllDay] = useState(false)
     const [justDeletedEvent, setJustDeletedEvent] = useState<DeletedEvent | null>(null)
     const calendarMainRef = useRef<HTMLDivElement | null>(null)
-    const monthScrollCleanupRef = useRef<() => void>(() => undefined)
-    const scrollToMonthRef = useRef<(date: Date, behavior?: ScrollBehavior) => void>(() => undefined)
-    const alignMonthViewRef = useRef<() => void>(() => undefined)
+    const monthScrollCleanupRef = useRef<() => void>(NOOP)
+    const scrollToMonthRef = useRef<(date: Date, behavior?: ScrollBehavior) => void>(NOOP)
+    const alignMonthViewRef = useRef<() => void>(NOOP)
     const visibleMonthRef = useRef(new Date())
     const lastCalendarViewRef = useRef('')
     const arrowTargetMonthRef = useRef<Date | null>(null)
@@ -268,9 +342,9 @@ export default function CalendarApp() {
     const [calendarView, setCalendarView] = useState(SCROLLING_MONTH_VIEW)
     const [loginChosen, setLoginChosen] = useState(() => localStorage.getItem("intro-seen") === "true") //state to track which login button was chosen: from intro's signup or login
     //logic: if intro page will not be shown (page viewed before), ONLY login button is clickable. so if seen, state should be true
-    const prevMonthCentreRef = useRef(new Date())
+    const rangeCentreMonthRef = useRef(new Date())
     const rangeRecenterInProgressRef = useRef(false)
-    const rangeAnchorCleanupRef = useRef<() => void>(() => undefined)
+    const rangeAnchorCleanupRef = useRef<() => void>(NOOP)
 
     const scrollVisibleMonth = useCallback((offset: number) => {
         const targetMonth = new Date(arrowTargetMonthRef.current ?? visibleMonthRef.current)
@@ -457,84 +531,99 @@ export default function CalendarApp() {
         }
     }, [userId, isPending])
 
-    function scrollCalendar(
+    function cancelRangeAnchorRestore() {
+        rangeAnchorCleanupRef.current()
+        rangeAnchorCleanupRef.current = NOOP
+    }
+
+    function recenterMonthRange(
         activeMonth: Date,
         viewportAnchor: MonthViewportAnchor = {
             date: activeMonth,
             offsetFromScrollerTop: 0,
         },
-    ) { //logic for scrolling month: updates range of months (if applicable) and sets title
-        //generate new list of months when we reach 1-2 months of the original scrollingmonth end range
+    ) {
         if (rangeRecenterInProgressRef.current) return
 
-        const monthDifference =
-            (activeMonth.getFullYear() - prevMonthCentreRef.current.getFullYear()) * 12
-            + activeMonth.getMonth() - prevMonthCentreRef.current.getMonth() //using month difference to calculate when to rerender
+        const monthsFromRangeCentre =
+            (activeMonth.getFullYear() - rangeCentreMonthRef.current.getFullYear()) * 12
+            + activeMonth.getMonth() - rangeCentreMonthRef.current.getMonth()
 
-        if (Math.abs(monthDifference) >= 5) {//roughly 5 months, generate new centre + months
+        if (Math.abs(monthsFromRangeCentre) >= RANGE_RECENTER_THRESHOLD_MONTHS) {
             const calendarApi = calendarComponentRef.current?.getApi()
-            const scroller = calendarMainRef.current
-                ?.querySelector<HTMLElement>('.calendar-month-weeks')
+            const scroller = findMonthScroller(calendarMainRef.current)
             if (!calendarApi || !scroller) return
 
-            const firstDateBeforeRecenter = scroller
-                .querySelector<HTMLElement>('[role="gridcell"][data-date]')
-                ?.dataset.date
+            const anchor = {...viewportAnchor}
             const handleContinuedWheel = (event: WheelEvent) => {
-                const scrollDelta = event.deltaMode === WheelEvent.DOM_DELTA_LINE
-                    ? event.deltaY * 16
-                    : event.deltaMode === WheelEvent.DOM_DELTA_PAGE
-                        ? event.deltaY * scroller.clientHeight
-                        : event.deltaY
-                viewportAnchor.offsetFromScrollerTop -= scrollDelta
+                anchor.offsetFromScrollerTop -= getWheelPixelDelta(event, scroller.clientHeight)
             }
 
-            rangeAnchorCleanupRef.current()
+            cancelRangeAnchorRestore()
+            let rangeAnchorFrame = 0
             let rangeMutationObserver: MutationObserver | null = null
             let rangeSizeObserver: ResizeObserver | null = null
             scroller.addEventListener('wheel', handleContinuedWheel, {passive: true})
             rangeAnchorCleanupRef.current = () => {
                 scroller.removeEventListener('wheel', handleContinuedWheel)
+                window.cancelAnimationFrame(rangeAnchorFrame)
                 rangeMutationObserver?.disconnect()
                 rangeSizeObserver?.disconnect()
             }
 
-            const rangeCentre = new Date(viewportAnchor.date.getFullYear(), viewportAnchor.date.getMonth(), 1)
+            const rangeCentre = new Date(anchor.date.getFullYear(), anchor.date.getMonth(), 1)
             rangeRecenterInProgressRef.current = true
-            prevMonthCentreRef.current = rangeCentre
-            rangeMutationObserver = new MutationObserver(() => {
-                const liveScroller = calendarMainRef.current
-                    ?.querySelector<HTMLElement>('.calendar-month-weeks')
-                const firstDateAfterRecenter = liveScroller
-                    ?.querySelector<HTMLElement>('[role="gridcell"][data-date]')
-                    ?.dataset.date
-                if (!liveScroller || !firstDateAfterRecenter ||
-                    firstDateAfterRecenter === firstDateBeforeRecenter) return
+            rangeCentreMonthRef.current = rangeCentre
 
-                const anchorDate = toLocalDateString(viewportAnchor.date)
-                const anchorRow = liveScroller
-                    .querySelector<HTMLElement>(`[role="gridcell"][data-date="${anchorDate}"]`)
-                    ?.closest<HTMLElement>('[role="row"]')
-                if (!anchorRow) return
+            const restoreAnchor = (liveScroller: HTMLElement, anchorRow?: HTMLElement) => {
+                cancelRangeAnchorRestore()
+                applyMonthViewportAnchor(liveScroller, anchor, anchorRow)
+            }
 
-                rangeMutationObserver?.disconnect()
-                rangeSizeObserver = new ResizeObserver(() => {
-                    rangeAnchorCleanupRef.current()
-                    rangeAnchorCleanupRef.current = () => undefined
+            const firstDateBeforeRecenter = getFirstRenderedDate(scroller)
+            if (monthsFromRangeCentre < 0) {
+                // Upward replacement rows receive a final size adjustment from FullCalendar.
+                // Restore after that adjustment so it cannot move the viewport by one week.
+                rangeMutationObserver = new MutationObserver(() => {
+                    const liveScroller = findMonthScroller(calendarMainRef.current)
+                    const anchorRow = liveScroller
+                        ? findDateRow(liveScroller, anchor.date)
+                        : null
+                    const firstDateAfterRecenter = liveScroller
+                        ? getFirstRenderedDate(liveScroller)
+                        : undefined
+                    if (!liveScroller || !anchorRow || !firstDateAfterRecenter ||
+                        firstDateAfterRecenter === firstDateBeforeRecenter) return
 
-                    const currentOffset = anchorRow.getBoundingClientRect().top -
-                        liveScroller.getBoundingClientRect().top
-                    liveScroller.scrollTop += currentOffset - viewportAnchor.offsetFromScrollerTop
+                    rangeMutationObserver?.disconnect()
+                    rangeSizeObserver = new ResizeObserver(() => restoreAnchor(liveScroller, anchorRow))
+                    rangeSizeObserver.observe(anchorRow)
                 })
-                rangeSizeObserver.observe(anchorRow)
-            })
-            rangeMutationObserver.observe(scroller, {
-                childList: true,
-                subtree: true,
-                attributes: true,
-                attributeFilter: ['data-date'],
-            })
-            calendarApi.gotoDate(viewportAnchor.date) //recenter while keeping the current top week at the top
+                rangeMutationObserver.observe(scroller, {
+                    childList: true,
+                    subtree: true,
+                    attributes: true,
+                    attributeFilter: ['data-date'],
+                })
+            }
+            calendarApi.gotoDate(anchor.date)
+
+            if (monthsFromRangeCentre > 0) {
+                // Downward rows are stable on the next frame; waiting for their resize
+                // notification over-counts fast wheel input.
+                let attemptsRemaining = RANGE_RESTORE_RETRIES
+                const restoreDownwardAnchor = () => {
+                    const liveScroller = findMonthScroller(calendarMainRef.current)
+                    const rangeWasReplaced = liveScroller &&
+                        getFirstRenderedDate(liveScroller) !== firstDateBeforeRecenter
+                    if (!rangeWasReplaced && attemptsRemaining-- > 0) {
+                        rangeAnchorFrame = window.requestAnimationFrame(restoreDownwardAnchor)
+                        return
+                    }
+                    if (liveScroller) restoreAnchor(liveScroller)
+                }
+                rangeAnchorFrame = window.requestAnimationFrame(restoreDownwardAnchor)
+            }
         }
     }
 
@@ -831,26 +920,24 @@ export default function CalendarApp() {
                         }
                         findToolbarTitle()
                         if (viewInfo.view.type !== SCROLLING_MONTH_VIEW) return
-                        const scroller = viewInfo.el.querySelector<HTMLElement>('.calendar-month-weeks')
+                        const scroller = findMonthScroller(viewInfo.el)
                         if (!scroller) return
                         const today = new Date()
                         setToolbarTitle(formatMonthTitle(today))
-                        scrollCalendar(today)
+                        recenterMonthRange(today)
 
                         const updateTitle = () => {
-                            const scrollerTop = scroller.getBoundingClientRect().top //screen position at top of calendar edge
-
-                            const firstRow = scroller.querySelector<HTMLElement>('[role="row"]') //first visible row
-                            const rowHeight = firstRow?.getBoundingClientRect().height ?? 0
-                            const switchingLine = scrollerTop + rowHeight
+                            const scrollerBounds = scroller.getBoundingClientRect()
+                            const sampleRow = scroller.querySelector<HTMLElement>('[role="row"]')
+                            const rowHeight = sampleRow?.getBoundingClientRect().height ?? 0
+                            const switchingLine = scrollerBounds.top + rowHeight
                             //cells that head a month
                             const monthStartCells = scroller.querySelectorAll<HTMLElement>('[role="gridcell"][data-date$="-01"]')
                             let activeMonthCell: HTMLElement | null = null
 
-                            const scrollerBounds = scroller.getBoundingClientRect()
                             for (const cell of monthStartCells) {
                                 const monthStartRow = cell.closest<HTMLElement>('[role="row"]')//check every cell
-                                if (monthStartRow === null) return
+                                if (!monthStartRow) continue
                                 const rowBounds = monthStartRow.getBoundingClientRect()
 
                                 const distanceFromTop = rowBounds.top - scrollerBounds.top
@@ -859,7 +946,7 @@ export default function CalendarApp() {
                                 } else {
                                     cell.dataset.monthLabelVisible = 'false'
                                 }
-                                if (monthStartRow && monthStartRow.getBoundingClientRect().top < switchingLine) {
+                                if (rowBounds.top < switchingLine) {
                                     activeMonthCell = cell //determine title month display
                                 }
                             }
@@ -868,29 +955,14 @@ export default function CalendarApp() {
                             if (month) {
                                 const [year, monthIndex] = month.split('-').map(Number)
                                 const activeMonth = new Date(year, monthIndex - 1, 1)
-                                const topRow = [...scroller.querySelectorAll<HTMLElement>('[role="row"]')]
-                                    .find((row) => {
-                                        const rowBounds = row.getBoundingClientRect()
-                                        return rowBounds.top <= scrollerBounds.top + 1 &&
-                                            rowBounds.bottom > scrollerBounds.top + 1
-                                    })
-                                const topDateString = topRow
-                                    ?.querySelector<HTMLElement>('[role="gridcell"][data-date]')
-                                    ?.dataset.date
-                                const [topYear, topMonth, topDay] = topDateString
-                                    ?.split('-').map(Number) ?? []
-                                const viewportDate = topYear && topMonth && topDay
-                                    ? new Date(topYear, topMonth - 1, topDay)
-                                    : activeMonth
-                                const viewportAnchor = {
-                                    date: viewportDate,
-                                    offsetFromScrollerTop: topRow
-                                        ? topRow.getBoundingClientRect().top - scrollerBounds.top
-                                        : 0,
-                                }
+                                const viewportAnchor = getMonthViewportAnchor(
+                                    scroller,
+                                    scrollerBounds,
+                                    activeMonth,
+                                )
                                 visibleMonthRef.current = activeMonth
                                 setToolbarTitle(formatMonthTitle(activeMonth))
-                                scrollCalendar(activeMonth, viewportAnchor)
+                                recenterMonthRange(activeMonth, viewportAnchor)
                             }
                         }
 
@@ -905,7 +977,7 @@ export default function CalendarApp() {
                             const top = monthStartRow.offsetTop
                             visibleMonthRef.current = activeMonth
                             setToolbarTitle(formatMonthTitle(activeMonth))
-                            scrollCalendar(activeMonth)
+                            recenterMonthRange(activeMonth)
 
                             if (behavior === 'smooth') {
                                 scroller.scrollTo({top, behavior})
@@ -972,8 +1044,7 @@ export default function CalendarApp() {
 
                         monthScrollCleanupRef.current = () => {
                             window.cancelAnimationFrame(alignmentFrame)
-                            rangeAnchorCleanupRef.current()
-                            rangeAnchorCleanupRef.current = () => undefined
+                            cancelRangeAnchorRestore()
                             window.clearTimeout(arrowTargetTimerRef.current)
                             arrowTargetMonthRef.current = null
                             viewInfo.el.classList.add('scrolling-month-measuring')
