@@ -451,7 +451,10 @@ export default function CalendarApp() {
         }
     }, [userId, isPending])
 
-    function scrollCalendar(activeMonth: Date) { //logic for scrolling month: updates range of months (if applicable) and sets title
+    function scrollCalendar(
+        activeMonth: Date,
+        viewportDate: Date = activeMonth,
+    ) { //logic for scrolling month: updates range of months (if applicable) and sets title
         //generate new list of months when we reach 1-2 months of the original scrollingmonth end range
         if (rangeRecenterInProgressRef.current) return
 
@@ -463,9 +466,10 @@ export default function CalendarApp() {
             const calendarApi = calendarComponentRef.current?.getApi()
             if (!calendarApi) return
 
+            const rangeCentre = new Date(viewportDate.getFullYear(), viewportDate.getMonth(), 1)
             rangeRecenterInProgressRef.current = true
-            prevMonthCentreRef.current = activeMonth
-            calendarApi.gotoDate(activeMonth) //sets new month to generate visibleRange around
+            prevMonthCentreRef.current = rangeCentre
+            calendarApi.gotoDate(viewportDate) //recenter while keeping the current top week at the top
         }
     }
 
@@ -799,9 +803,23 @@ export default function CalendarApp() {
                             if (month) {
                                 const [year, monthIndex] = month.split('-').map(Number)
                                 const activeMonth = new Date(year, monthIndex - 1, 1)
+                                const topRow = [...scroller.querySelectorAll<HTMLElement>('[role="row"]')]
+                                    .find((row) => {
+                                        const rowBounds = row.getBoundingClientRect()
+                                        return rowBounds.top <= scrollerBounds.top + 1 &&
+                                            rowBounds.bottom > scrollerBounds.top + 1
+                                    })
+                                const topDateString = topRow
+                                    ?.querySelector<HTMLElement>('[role="gridcell"][data-date]')
+                                    ?.dataset.date
+                                const [topYear, topMonth, topDay] = topDateString
+                                    ?.split('-').map(Number) ?? []
+                                const viewportDate = topYear && topMonth && topDay
+                                    ? new Date(topYear, topMonth - 1, topDay)
+                                    : activeMonth
                                 visibleMonthRef.current = activeMonth
                                 setToolbarTitle(formatMonthTitle(activeMonth))
-                                scrollCalendar(activeMonth)
+                                scrollCalendar(activeMonth, viewportDate)
                             }
                         }
 
