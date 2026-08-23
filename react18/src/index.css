@@ -532,7 +532,7 @@ h2 {
     font-size: 24px;
     font-weight: 600;
     pointer-events: none;
-    transition: opacity 750ms ease;
+    transition: opacity 500ms ease;
 }
 
 .month-boundary-cell:first-child .month-boundary-label {
