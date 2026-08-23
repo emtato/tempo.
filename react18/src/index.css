@@ -213,23 +213,56 @@ h2 {
     }
 }
 
+.calendar-month-weeks [role='gridcell'] > div:first-child > div:first-child {
+    margin-block-start: var(--calendar-day-number-top-spacing) !important;
+    margin-block-end: var(--calendar-date-event-gap) !important;
+    font-size: var(--calendar-day-number-font-size) !important;
+    line-height: var(--calendar-day-number-line-height) !important;
+}
+
+.calendar-main [role='button']:has(.calendar-event-title) {
+    margin-block-end: var(--calendar-event-spacing) !important;
+    padding-block: var(--calendar-event-shell-padding) !important;
+}
+
+.calendar-main [role='button']:has(.calendar-event-title) > div:has(> .calendar-event-title) {
+    min-height: var(--calendar-event-line-height) !important;
+    padding-block: var(--calendar-event-content-padding) !important;
+    font-size: var(--calendar-event-font-size) !important;
+    line-height: var(--calendar-event-line-height) !important;
+}
+
+.calendar-main [role='button']:has(.calendar-event-time) > :first-child {
+    flex: 0 0 var(--calendar-event-dot-size) !important;
+    width: var(--calendar-event-dot-size) !important;
+    height: var(--calendar-event-dot-size) !important;
+    border-width: calc(var(--calendar-event-dot-size) / 2) !important;
+    margin-inline-start: var(--calendar-event-inline-padding) !important;
+}
+
+.calendar-main [role='gridcell'] [role='button'][aria-haspopup='dialog'],
+.calendar-main [role='gridcell'] [role='button'][aria-haspopup='dialog'] > div {
+    font-size: var(--calendar-event-font-size) !important;
+    line-height: var(--calendar-event-line-height) !important;
+}
+
 .calendar-year-view [role='grid'][data-date] [role='button'] > div:has(> .calendar-event-title) {
-    min-height: 14px !important;
+    min-height: var(--calendar-year-event-min-height) !important;
     padding-block: 0 !important;
-    font-size: 12px !important;
-    line-height: 12px !important;
+    font-size: var(--calendar-event-font-size) !important;
+    line-height: var(--calendar-year-event-line-height) !important;
 }
 
 .calendar-event-time {
     flex-shrink: 1;
-    padding-inline-start: 4px;
+    padding-inline-start: var(--calendar-event-inline-padding);
     overflow: hidden;
     white-space: nowrap;
 }
 
 .calendar-event-title {
     flex-shrink: 100;
-    padding-inline: 4px;
+    padding-inline: var(--calendar-event-inline-padding);
     overflow: hidden;
     white-space: nowrap;
 }
@@ -239,11 +272,11 @@ h2 {
 }
 
 .calendar-year-view [role='grid'][data-date] [role='button']:has(.calendar-event-time):not(:has(> :nth-child(3))) {
-    margin-inline: 2px !important;
+    margin-inline: var(--calendar-year-event-inline-margin) !important;
 }
 
 .calendar-year-view [role='grid'][data-date] [role='button']:has(.calendar-event-time):not(:has(> :nth-child(3))) > div:first-child {
-    margin-inline-start: 4px !important;
+    margin-inline-start: var(--calendar-event-inline-padding) !important;
 }
 
 .calendar-year-view [role='grid'][data-date] [role='gridcell'] > div:first-child {
@@ -448,6 +481,20 @@ h2 {
 }
 
 .calendar-main {
+    --calendar-day-number-font-size: clamp(11px, 1.474cqi, 14px);
+    --calendar-day-number-line-height: clamp(16px, 2.105cqi, 20px);
+    --calendar-day-number-top-spacing: clamp(3px, 0.632cqi, 6px);
+    --calendar-date-event-gap: clamp(-2px, -2cqi, -2px);
+    --calendar-event-font-size: clamp(9px, 1.263cqi, 12px);
+    --calendar-event-line-height: clamp(12px, 1.684cqi, 16px);
+    --calendar-event-inline-padding: clamp(1.5px, 0.421cqi, 4px);
+    --calendar-event-content-padding: clamp(0.5px, 0.105cqi, 1px);
+    --calendar-event-shell-padding: clamp(0.25px, 0.053cqi, 0.5px);
+    --calendar-event-spacing: clamp(0.25px, 0.053cqi, 0.5px);
+    --calendar-event-dot-size: clamp(5px, 0.842cqi, 8px);
+    --calendar-year-event-line-height: clamp(10px, 1.263cqi, 12px);
+    --calendar-year-event-min-height: clamp(12px, 1.474cqi, 14px);
+    --calendar-year-event-inline-margin: clamp(1px, 0.211cqi, 2px);
     min-width: 0;
     box-sizing: border-box;
     padding-left: var(--calendar-frame-size);
@@ -505,21 +552,13 @@ h2 {
     }
 
     .calendar-event-title {
-        padding-inline: 1px;
-        font-size: 80%;
+        padding-inline: var(--calendar-event-inline-padding);
     }
 
     .calendar-main [role="button"]:has(.calendar-event-title) {
         padding-inline: 0 !important;
     }
 
-    .calendar-main [role="button"]:has(.calendar-event-title) > :first-child {
-        flex: 0 0 5px !important;
-        width: 5px !important;
-        height: 5px !important;
-        border-width: 2.5px !important;
-        margin-inline-start: 0px !important;
-    }
 }
 
 .month-boundary-label {
