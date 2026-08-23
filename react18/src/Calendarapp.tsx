@@ -41,6 +41,11 @@ interface MonthViewportAnchor {
     offsetFromScrollerTop: number
 }
 
+interface PendingRangeViewportAnchor {
+    anchor: MonthViewportAnchor
+    firstRenderedDate: string | undefined
+}
+
 export interface DeletedEvent {
     id: string
     title: string
@@ -75,7 +80,8 @@ const DRAFT_EVENT_ID = 'draft-event'
 const SCROLLING_MONTH_VIEW = 'scrollingMonth'
 const MONTH_SCROLLER_SELECTOR = '.calendar-month-weeks'
 const DATE_CELL_SELECTOR = '[role="gridcell"][data-date]'
-const RANGE_RECENTER_THRESHOLD_MONTHS = 5
+const RANGE_MONTHS_PER_SIDE = 12
+const RANGE_RECENTER_THRESHOLD_MONTHS = RANGE_MONTHS_PER_SIDE - 1
 const RANGE_RESTORE_RETRIES = 2
 const NOOP = () => undefined
 
@@ -93,11 +99,11 @@ const CALENDAR_VIEWS = {
         visibleRange: (currentDate: Date) => {
             const start = new Date(
                 currentDate.getFullYear(),
-                currentDate.getMonth() - 6, 1)
+                currentDate.getMonth() - RANGE_MONTHS_PER_SIDE, 1)
 
             const end = new Date(
                 currentDate.getFullYear(),
-                currentDate.getMonth() + 7, 1)
+                currentDate.getMonth() + RANGE_MONTHS_PER_SIDE + 1, 1)
             return {
                 start: toLocalDateString(start),
                 end: toLocalDateString(end)
@@ -152,6 +158,11 @@ function findMonthScroller(root: ParentNode | null) {
     return root?.querySelector<HTMLElement>(MONTH_SCROLLER_SELECTOR) ?? null
 }
 
+function setCalendarToolbarTitle(root: ParentNode | null, date: Date) {
+    const toolbarTitle = root?.querySelector<HTMLElement>('[role="heading"]')
+    if (toolbarTitle) toolbarTitle.textContent = formatMonthTitle(date)
+}
+
 function getFirstRenderedDate(scroller: HTMLElement) {
     return scroller.querySelector<HTMLElement>(DATE_CELL_SELECTOR)?.dataset.date
 }
@@ -184,6 +195,32 @@ function getMonthViewportAnchor(
     }
 
     return {date: fallbackDate, offsetFromScrollerTop: 0}
+}
+
+function updateMonthViewportPresentation(scroller: HTMLElement) {
+    const scrollerBounds = scroller.getBoundingClientRect()
+    const sampleRow = scroller.querySelector<HTMLElement>('[role="row"]')
+    const rowHeight = sampleRow?.getBoundingClientRect().height ?? 0
+    const switchingLine = scrollerBounds.top + rowHeight
+    const monthStartCells = scroller.querySelectorAll<HTMLElement>(
+        '[role="gridcell"][data-date$="-01"]',
+    )
+    let activeMonthDate: string | undefined
+
+    for (const cell of monthStartCells) {
+        const monthStartRow = cell.closest<HTMLElement>('[role="row"]')
+        if (!monthStartRow) continue
+
+        const rowBounds = monthStartRow.getBoundingClientRect()
+        const distanceFromTop = rowBounds.top - scrollerBounds.top
+        const labelIsVisible = distanceFromTop > 1.9 &&
+            rowBounds.bottom + rowHeight * 0.9 < scrollerBounds.bottom
+        cell.dataset.monthLabelVisible = String(labelIsVisible)
+
+        if (rowBounds.top < switchingLine) activeMonthDate = cell.dataset.date
+    }
+
+    return {activeMonthDate, scrollerBounds}
 }
 
 function getWheelPixelDelta(event: WheelEvent, pageHeight: number) {
@@ -345,6 +382,7 @@ export default function CalendarApp() {
     const rangeCentreMonthRef = useRef(new Date())
     const rangeRecenterInProgressRef = useRef(false)
     const rangeAnchorCleanupRef = useRef<() => void>(NOOP)
+    const pendingRangeViewportAnchorRef = useRef<PendingRangeViewportAnchor | null>(null)
 
     const scrollVisibleMonth = useCallback((offset: number) => {
         const targetMonth = new Date(arrowTargetMonthRef.current ?? visibleMonthRef.current)
@@ -534,6 +572,7 @@ export default function CalendarApp() {
     function cancelRangeAnchorRestore() {
         rangeAnchorCleanupRef.current()
         rangeAnchorCleanupRef.current = NOOP
+        pendingRangeViewportAnchorRef.current = null
     }
 
     function recenterMonthRange(
@@ -576,11 +615,15 @@ export default function CalendarApp() {
             rangeCentreMonthRef.current = rangeCentre
 
             const restoreAnchor = (liveScroller: HTMLElement, anchorRow?: HTMLElement) => {
-                cancelRangeAnchorRestore()
                 applyMonthViewportAnchor(liveScroller, anchor, anchorRow)
+                setCalendarToolbarTitle(calendarMainRef.current, activeMonth)
             }
 
             const firstDateBeforeRecenter = getFirstRenderedDate(scroller)
+            pendingRangeViewportAnchorRef.current = {
+                anchor,
+                firstRenderedDate: firstDateBeforeRecenter,
+            }
             if (monthsFromRangeCentre < 0) {
                 // Upward replacement rows receive a final size adjustment from FullCalendar.
                 // Restore after that adjustment so it cannot move the viewport by one week.
@@ -596,7 +639,10 @@ export default function CalendarApp() {
                         firstDateAfterRecenter === firstDateBeforeRecenter) return
 
                     rangeMutationObserver?.disconnect()
-                    rangeSizeObserver = new ResizeObserver(() => restoreAnchor(liveScroller, anchorRow))
+                    rangeSizeObserver = new ResizeObserver(() => {
+                        rangeSizeObserver?.disconnect()
+                        restoreAnchor(liveScroller, anchorRow)
+                    })
                     rangeSizeObserver.observe(anchorRow)
                 })
                 rangeMutationObserver.observe(scroller, {
@@ -607,6 +653,7 @@ export default function CalendarApp() {
                 })
             }
             calendarApi.gotoDate(anchor.date)
+            setCalendarToolbarTitle(calendarMainRef.current, activeMonth)
 
             if (monthsFromRangeCentre > 0) {
                 // Downward rows are stable on the next frame; waiting for their resize
@@ -927,33 +974,11 @@ export default function CalendarApp() {
                         recenterMonthRange(today)
 
                         const updateTitle = () => {
-                            const scrollerBounds = scroller.getBoundingClientRect()
-                            const sampleRow = scroller.querySelector<HTMLElement>('[role="row"]')
-                            const rowHeight = sampleRow?.getBoundingClientRect().height ?? 0
-                            const switchingLine = scrollerBounds.top + rowHeight
-                            //cells that head a month
-                            const monthStartCells = scroller.querySelectorAll<HTMLElement>('[role="gridcell"][data-date$="-01"]')
-                            let activeMonthCell: HTMLElement | null = null
+                            const {activeMonthDate, scrollerBounds} =
+                                updateMonthViewportPresentation(scroller)
 
-                            for (const cell of monthStartCells) {
-                                const monthStartRow = cell.closest<HTMLElement>('[role="row"]')//check every cell
-                                if (!monthStartRow) continue
-                                const rowBounds = monthStartRow.getBoundingClientRect()
-
-                                const distanceFromTop = rowBounds.top - scrollerBounds.top
-                                if (distanceFromTop > 1.9 && rowBounds.bottom + rowHeight * 0.9 < scrollerBounds.bottom) {
-                                    cell.dataset.monthLabelVisible = 'true'//if cell is visible, add class to show month label
-                                } else {
-                                    cell.dataset.monthLabelVisible = 'false'
-                                }
-                                if (rowBounds.top < switchingLine) {
-                                    activeMonthCell = cell //determine title month display
-                                }
-                            }
-                            const month = activeMonthCell?.dataset.date
-
-                            if (month) {
-                                const [year, monthIndex] = month.split('-').map(Number)
+                            if (activeMonthDate) {
+                                const [year, monthIndex] = activeMonthDate.split('-').map(Number)
                                 const activeMonth = new Date(year, monthIndex - 1, 1)
                                 const viewportAnchor = getMonthViewportAnchor(
                                     scroller,
@@ -989,9 +1014,31 @@ export default function CalendarApp() {
 
                         let scrollEndTimer = 0
                         const handleScroll = () => {
-                            updateTitle()
                             window.clearTimeout(scrollEndTimer)
+                            if (rangeRecenterInProgressRef.current) {
+                                const pendingAnchor = pendingRangeViewportAnchorRef.current
+                                const rangeWasReplaced = pendingAnchor &&
+                                    getFirstRenderedDate(scroller) !== pendingAnchor.firstRenderedDate
+                                if (pendingAnchor && rangeWasReplaced) {
+                                    // gotoDate can reset the requested week to the row top after
+                                    // our first restore. Preserve the live fractional offset.
+                                    applyMonthViewportAnchor(scroller, pendingAnchor.anchor)
+                                }
+                                return
+                            }
+
+                            updateTitle()
+                            // updateTitle can synchronously start a range replacement. Do not
+                            // let this same scroll event schedule a stale smooth month snap.
+                            if (rangeRecenterInProgressRef.current) {
+                                return
+                            }
+
                             scrollEndTimer = window.setTimeout(() => { //scroll snap to start of months
+                                if (rangeRecenterInProgressRef.current) {
+                                    return
+                                }
+
                                 const scrollerTop = scroller.getBoundingClientRect().top
 
                                 const monthStartCells = scroller.querySelectorAll<HTMLElement>(
@@ -1064,11 +1111,22 @@ export default function CalendarApp() {
                         lastCalendarViewRef.current = dateInfo.view.type
 
                         if (rangeRecenterInProgressRef.current) {
-                            // FullCalendar can emit scroll events while applying the new range.
-                            // Keep those events from starting a second gotoDate feedback loop.
+                            setCalendarToolbarTitle(calendarMainRef.current, visibleMonthRef.current)
+
+                            // FullCalendar emits a final gotoDate scroll reset after the rows are
+                            // measured. Keep the anchor active through that frame, restore it once
+                            // more, then release the re-entry lock and wheel tracking.
                             window.requestAnimationFrame(() => {
                                 window.requestAnimationFrame(() => {
-                                    rangeRecenterInProgressRef.current = false
+                                    window.requestAnimationFrame(() => {
+                                        const scroller = findMonthScroller(calendarMainRef.current)
+                                        const pendingAnchor = pendingRangeViewportAnchorRef.current
+                                        if (scroller && pendingAnchor) {
+                                            applyMonthViewportAnchor(scroller, pendingAnchor.anchor)
+                                        }
+                                        cancelRangeAnchorRestore()
+                                        rangeRecenterInProgressRef.current = false
+                                    })
                                 })
                             })
                         }
