@@ -85,6 +85,7 @@ h2 {
 }
 
 .calendar-month-weeks {
+    overflow-anchor: none;
     scrollbar-width: none;
 }
 
@@ -529,9 +530,9 @@ h2 {
     transform: translate(-50%, 25%);
     opacity: 0;
     font-size: 24px;
-    font-weight: 500;
+    font-weight: 600;
     pointer-events: none;
-    transition: opacity 1000ms ease;
+    transition: opacity 750ms ease;
 }
 
 .month-boundary-cell:first-child .month-boundary-label {
