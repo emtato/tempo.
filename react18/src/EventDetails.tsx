@@ -260,7 +260,7 @@ export default function Popup({
     // Input and title handlers
     // ------------------------------------------------
 
-    function handleTitleInputChange([returnTime, returnLocation, returnTitle]: [string, string, string]) {
+    function handleTitleInputChange([returnTime, returnEndTime, returnLocation, returnTitle, rangeInProgress]: [string, string, string, string, boolean]) {
         if (titleCleanupTimer.current !== null) {
             clearTimeout(titleCleanupTimer.current);
             titleCleanupTimer.current = null;
@@ -272,20 +272,31 @@ export default function Popup({
 
             handleStartTimeChange(nextStartTime);
         }
+        if (returnEndTime !== "") {
+            const [hours, minutes] = returnEndTime.split(":").map(Number);
+            const nextEndTime = hours * 60 + minutes;
+            handleEndTimeChange(nextEndTime);
+        }
 
         if (returnLocation != "") {
             //TODO
         }
-
-        titleCleanupTimer.current = setTimeout(() => {
-            setTitle(returnTitle);
-            titleCleanupTimer.current = null;
-        }, 967);
+        if (rangeInProgress) {
+            titleCleanupTimer.current = setTimeout(() => {
+                setTitle(returnTitle);
+                titleCleanupTimer.current = null;
+            }, 3567);
+        } else {
+            titleCleanupTimer.current = setTimeout(() => {
+                setTitle(returnTitle);
+                titleCleanupTimer.current = null;
+            }, 967);
+        }
     }
 
-    // ------------------------------------------------
-    // Time handlers
-    // ------------------------------------------------
+// ------------------------------------------------
+// Time handlers
+// ------------------------------------------------
 
     function handleStartTimeChange(nextStartTime: number) {
         let defaultEndTime = 0
@@ -326,9 +337,9 @@ export default function Popup({
         }
     }
 
-    // ------------------------------------------------
-    // Popup lifecycle and persistence
-    // ------------------------------------------------
+// ------------------------------------------------
+// Popup lifecycle and persistence
+// ------------------------------------------------
 
     function closePopup() {
         setStartTime(DEFAULT_START_TIME)
@@ -389,9 +400,9 @@ export default function Popup({
         deleteEvent(event)
     }
 
-    // ------------------------------------------------
-    // Effects
-    // ------------------------------------------------
+// ------------------------------------------------
+// Effects
+// ------------------------------------------------
 
     useEffect(() => { // sync the popup dates when CalendarApp opens it with a new date
         if (isOpen) {
@@ -444,9 +455,9 @@ export default function Popup({
         };
     }, [isOpen]);
 
-    // ------------------------------------------------
-    // Render
-    // ------------------------------------------------
+// ------------------------------------------------
+// Render
+// ------------------------------------------------
 
     if (!isOpen) {
         return null
