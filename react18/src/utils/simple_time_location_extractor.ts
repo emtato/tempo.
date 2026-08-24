@@ -45,8 +45,8 @@ const formatRangeTime = (time: string): string => {
 }
 
 export const simpleTimeLocationExtractor = (title: string, timeModified: boolean,
-                                            locationModified: boolean): [string, string, string, string] => {
-
+                                            locationModified: boolean): [string, string, string, string, boolean] => {
+    let rangeInProgress = false
     let returnTime = ""
     let returnEndTime = ""
     let returnDate = ""
@@ -56,6 +56,8 @@ export const simpleTimeLocationExtractor = (title: string, timeModified: boolean
     let timeRangeExtracted = false
     let dateRangeExtracted = false
     //try time range
+    if (title.includes("to") || title.includes("-")) rangeInProgress = true
+
     const timeRangePattern = /(?<!\w)((?:(?:0?[1-9]|1[0-2])(?:[.:][0-5]\d)?\s*[ap](?:\.?m\.?)|(?:[01]?\d|2[0-3])(?:[.:][0-5]\d)?))\s*(?:-|to)\s*((?:(?:0?[1-9]|1[0-2])(?:[.:][0-5]\d)?\s*[ap](?:\.?m\.?)|(?:[01]?\d|2[0-3])(?:[.:][0-5]\d)?))(?!\w)/i;
     const malformedTimeRangePattern = /(?:(?<!\w)(?:0|1[3-9]|2[0-3])(?:[.:][0-5]\d)?\s*[ap](?:\.?m\.?)(?!\w)\s*(?:-|to)|(?:-|to)\s*(?<!\w)(?:0|1[3-9]|2[0-3])(?:[.:][0-5]\d)?\s*[ap](?:\.?m\.?)(?!\w))/i
     const timeRangeRejected = malformedTimeRangePattern.test(title)
@@ -64,7 +66,7 @@ export const simpleTimeLocationExtractor = (title: string, timeModified: boolean
         timeRangeExtracted = true;
         returnTime = formatRangeTime(timeRangeMatch[1])
         returnEndTime = formatRangeTime(timeRangeMatch[2])
-         returnTitle = returnTitle.replace(timeRangeMatch[0], "").replace(/\s+/g, " ").trim();
+        returnTitle = returnTitle.replace(timeRangeMatch[0], "").replace(/\s+/g, " ").trim();
     }
     if (!timeModified && !timeRangeExtracted && !timeRangeRejected) {
         if ((/\bnoon\b/i).test(title) || (/\bmidnight\b/i).test(title)) {
@@ -147,5 +149,5 @@ export const simpleTimeLocationExtractor = (title: string, timeModified: boolean
     if (!locationModified) {
         //TODO
     }
-    return [returnTime, returnEndTime, returnLocation, returnTitle]
+    return [returnTime, returnEndTime, returnLocation, returnTitle, rangeInProgress]
 }
