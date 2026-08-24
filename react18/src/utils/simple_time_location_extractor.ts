@@ -45,7 +45,7 @@ const formatRangeTime = (time: string): string => {
 }
 
 export const simpleTimeLocationExtractor = (title: string, timeModified: boolean,
-                                            locationModified: boolean): [string, string, string] => {
+                                            locationModified: boolean): [string, string, string, string] => {
 
     let returnTime = ""
     let returnEndTime = ""
@@ -64,6 +64,7 @@ export const simpleTimeLocationExtractor = (title: string, timeModified: boolean
         timeRangeExtracted = true;
         returnTime = formatRangeTime(timeRangeMatch[1])
         returnEndTime = formatRangeTime(timeRangeMatch[2])
+         returnTitle = returnTitle.replace(timeRangeMatch[0], "").replace(/\s+/g, " ").trim();
     }
     if (!timeModified && !timeRangeExtracted && !timeRangeRejected) {
         if ((/\bnoon\b/i).test(title) || (/\bmidnight\b/i).test(title)) {
@@ -146,5 +147,5 @@ export const simpleTimeLocationExtractor = (title: string, timeModified: boolean
     if (!locationModified) {
         //TODO
     }
-    return [returnTime, returnLocation, returnTitle]
+    return [returnTime, returnEndTime, returnLocation, returnTitle]
 }

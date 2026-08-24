@@ -260,7 +260,7 @@ export default function Popup({
     // Input and title handlers
     // ------------------------------------------------
 
-    function handleTitleInputChange([returnTime, returnLocation, returnTitle]: [string, string, string]) {
+    function handleTitleInputChange([returnTime, returnEndTime, returnLocation, returnTitle]: [string, string, string, string]) {
         if (titleCleanupTimer.current !== null) {
             clearTimeout(titleCleanupTimer.current);
             titleCleanupTimer.current = null;
@@ -271,6 +271,11 @@ export default function Popup({
             const nextStartTime = hours * 60 + minutes;
 
             handleStartTimeChange(nextStartTime);
+        }
+        if(returnEndTime !== "") {
+            const [hours, minutes] = returnEndTime.split(":").map(Number);
+            const nextEndTime = hours * 60 + minutes;
+            handleEndTimeChange(nextEndTime);
         }
 
         if (returnLocation != "") {
