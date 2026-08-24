@@ -2,14 +2,70 @@
 //extracts time if title contains time in the following formats
 // XPM, X PM, X.XXPM, X.XX PM, X:XXPM X:XX PM, 0:XX, 13-23:XX, noon, midnight
 
+//also extracts time and date ranges
+//return time in 24h format
+
+const convertTo24Hour = (hour: number, period: "am" | "pm"): number => {
+    if (period === "pm" && hour !== 12) {
+        return hour + 12
+    }
+    if (period === "am" && hour === 12) {
+        return 0
+    }
+    return hour
+}
+
+const formatRangeTime = (time: string): string => {
+    let timeWithoutPeriod = time.trim().toLowerCase()
+    let period: "am" | "pm" | undefined
+
+    //The range regex has already validated the time, so finding an "a" or "p" is enough to tell whether an AM/PM suffix is present.
+    const amIndex = timeWithoutPeriod.indexOf("a")
+    const pmIndex = timeWithoutPeriod.indexOf("p")
+    if (amIndex !== -1) {
+        period = "am"
+        timeWithoutPeriod = timeWithoutPeriod.substring(0, amIndex).trim()
+    } else if (pmIndex !== -1) {
+        period = "pm"
+        timeWithoutPeriod = timeWithoutPeriod.substring(0, pmIndex).trim()
+    }
+
+    //Support both 4:30pm and 4.30pm, while keeping the same split approach.
+    const timeParts = timeWithoutPeriod.includes(":")
+        ? timeWithoutPeriod.split(":")
+        : timeWithoutPeriod.split(".")
+    let hour = Number(timeParts[0])
+    const minute = timeParts[1] ?? "00"
+
+    if (period) {
+        hour = convertTo24Hour(hour, period)
+    }
+
+    return `${String(hour).padStart(2, "0")}:${minute}`
+}
+
 export const simpleTimeLocationExtractor = (title: string, timeModified: boolean,
                                             locationModified: boolean): [string, string, string] => {
 
     let returnTime = ""
+    let returnEndTime = ""
+    let returnDate = ""
+    let returnEndDate = ""
     let returnLocation = ""
     let returnTitle = title
-    //TODO: eventually make returned title remove the keywords it found in title? meet Amy at 3 -> meet Amy
-    if (!timeModified) {
+    let timeRangeExtracted = false
+    let dateRangeExtracted = false
+    //try time range
+    const timeRangePattern = /(?<!\w)((?:(?:0?[1-9]|1[0-2])(?:[.:][0-5]\d)?\s*[ap](?:\.?m\.?)|(?:[01]?\d|2[0-3])(?:[.:][0-5]\d)?))\s*(?:-|to)\s*((?:(?:0?[1-9]|1[0-2])(?:[.:][0-5]\d)?\s*[ap](?:\.?m\.?)|(?:[01]?\d|2[0-3])(?:[.:][0-5]\d)?))(?!\w)/i;
+    const malformedTimeRangePattern = /(?:(?<!\w)(?:0|1[3-9]|2[0-3])(?:[.:][0-5]\d)?\s*[ap](?:\.?m\.?)(?!\w)\s*(?:-|to)|(?:-|to)\s*(?<!\w)(?:0|1[3-9]|2[0-3])(?:[.:][0-5]\d)?\s*[ap](?:\.?m\.?)(?!\w))/i
+    const timeRangeRejected = malformedTimeRangePattern.test(title)
+    const timeRangeMatch = timeRangeRejected ? null : title.match(timeRangePattern);
+    if (timeRangeMatch) {
+        timeRangeExtracted = true;
+        returnTime = formatRangeTime(timeRangeMatch[1])
+        returnEndTime = formatRangeTime(timeRangeMatch[2])
+    }
+    if (!timeModified && !timeRangeExtracted && !timeRangeRejected) {
         if ((/\bnoon\b/i).test(title) || (/\bmidnight\b/i).test(title)) {
             if ((/\bnoon\b/i).test(title) && !(/\bmidnight\b/i).test(title)) {
                 returnTime = "12:00";
@@ -43,13 +99,9 @@ export const simpleTimeLocationExtractor = (title: string, timeModified: boolean
                 foundtime = true;
                 let hour = Number(twelveHourTime[1]);
                 const minute = twelveHourTime[2] ?? "00";
-                const period = twelveHourTime[3].toLowerCase();
+                const period = twelveHourTime[3].toLowerCase() as "am" | "pm";
 
-                if (period === "pm" && hour !== 12) {
-                    hour += 12;
-                } else if (period === "am" && hour === 12) {
-                    hour = 0;
-                }
+                hour = convertTo24Hour(hour, period)
                 returnTime = String(hour).padStart(2, "0") + ":" + minute;
                 if (hour + 1 >= 24) {
                     hour = 0;
