@@ -61,6 +61,7 @@ export async function saveCalendarEvent(event: SaveCalendarEventInput, userId: s
         const location = extractionResult.location;
         const requiresConfirmation = extractionResult.requiresConfirmation;
         const rangeInProgress = extractionResult.rangeInProgress;
+        console.log("savng", event)
     event.title = returnTitle
     if (startTime != "") {
         const [hours, minutes] = startTime.split(":").map(Number);

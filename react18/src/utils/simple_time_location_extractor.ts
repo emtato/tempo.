@@ -45,11 +45,12 @@ function convertTo24Hour(hour: number, period: "am" | "pm"): number {
     return hour
 }
 
-function formatRangeTime(time: string): string {
+function formatRangeTime(time: string): [string, boolean] {
     let timeWithoutPeriod = time.trim().toLowerCase()
     let period: "am" | "pm" | undefined
 
     //The range regex has already validated the time, so finding an "a" or "p" is enough to tell whether an AM/PM suffix is present.
+    let presenceOfPeriod = timeWithoutPeriod.includes("a") || timeWithoutPeriod.includes("p")
     const amIndex = timeWithoutPeriod.indexOf("a")
     const pmIndex = timeWithoutPeriod.indexOf("p")
     if (amIndex !== -1) {
@@ -71,7 +72,7 @@ function formatRangeTime(time: string): string {
         hour = convertTo24Hour(hour, period)
     }
 
-    return `${String(hour).padStart(2, "0")}:${minute}`
+    return [`${String(hour).padStart(2, "0")}:${minute}`, presenceOfPeriod]
 }
 
 function extractDates(title: string) {
@@ -116,26 +117,46 @@ export const simpleTimeLocationExtractor = (title: string, timeModified: boolean
     //try time range
     if (title.includes("to") || title.includes("-")) rangeInProgress = true
 
-    const timeRangePattern = /(?:from\s+)?(?<!\w)((?:(?:0?[1-9]|1[0-2])(?:[.:][0-5]\d)?\s*[ap](?:\.?m\.?)|(?:[01]?\d|2[0-3])(?:[.:][0-5]\d)?))\s*(?:-|to)\s*((?:(?:0?[1-9]|1[0-2])(?:[.:][0-5]\d)?\s*[ap](?:\.?m\.?)|(?:[01]?\d|2[0-3])(?:[.:][0-5]\d)?))(?!\w)/i;
+    const timeRangePattern = /(?:from\s+)?(?:at\s+)?(?<!\w)((?:(?:0?[1-9]|1[0-2])(?:[.:][0-5]\d)?\s*[ap](?:\.?m\.?)|(?:[01]?\d|2[0-3])(?:[.:][0-5]\d)?))\s*(?:-|to)\s*((?:(?:0?[1-9]|1[0-2])(?:[.:][0-5]\d)?\s*[ap](?:\.?m\.?)|(?:[01]?\d|2[0-3])(?:[.:][0-5]\d)?))(?!\w)/i;
     const malformedTimeRangePattern = /(?:(?<!\w)(?:0|1[3-9]|2[0-3])(?:[.:][0-5]\d)?\s*[ap](?:\.?m\.?)(?!\w)\s*(?:-|to)|(?:-|to)\s*(?<!\w)(?:0|1[3-9]|2[0-3])(?:[.:][0-5]\d)?\s*[ap](?:\.?m\.?)(?!\w))/i
     const timeRangeRejected = malformedTimeRangePattern.test(title)
     const timeRangeMatch = timeRangeRejected ? null : title.match(timeRangePattern);
     if (timeRangeMatch) {
         timeRangeExtracted = true;
-        returnTime = formatRangeTime(timeRangeMatch[1])
-        returnEndTime = formatRangeTime(timeRangeMatch[2])
+        let presenceOfPeriodFirst = false;
+        let presenceOfPeriodSecond = false;
+        [returnTime, presenceOfPeriodFirst] = formatRangeTime(timeRangeMatch[1]);
+        [returnEndTime, presenceOfPeriodSecond] = formatRangeTime(timeRangeMatch[2]);
+        if (returnEndTime < returnTime) { //example: 6am-1 (pm assumed)
+            const hourString = returnEndTime.split(":")[0]
+            const minuteString = returnEndTime.split(":")[1]
+            const newHour = convertTo24Hour(Number(hourString), "pm")
+            returnEndTime = `${String(newHour).padStart(2, "0")}:${minuteString}`
+        }
+        if (!presenceOfPeriodFirst) { //first time's period not specified and hour + 12 < endTime: assume they meant both pm
+            const hourNumber = Number(returnTime.split(":")[0])
+            const minuteNumber = Number(returnTime.split(":")[1])
+            const endHourNumber = Number(returnEndTime.split(":")[0])
+            const endMinuteNumber = Number(returnEndTime.split(":")[1])
+            const startTimeMinutesAdd12h = (hourNumber * 60) + minuteNumber + 12 * 60
+            const endtimeMinutes = (endHourNumber * 60) + endMinuteNumber
+            if(startTimeMinutesAdd12h < endtimeMinutes) {
+                returnTime = convertTo24Hour(parseInt(returnTime.split(":")[0]), "pm") + ":" + minuteNumber
+            }
+        }
         returnTitle = returnTitle.replace(timeRangeMatch[0], "").replace(/\s+/g, " ").trim();
     }
     //try date range
     [returnDate, returnEndDate] = extractDates(title) ?? ["", ""]
     const currentYear = new Date().getFullYear() //TODO: eventually depend on clicked date's year, not current year
-    if (returnEndDate < returnDate) { //end before start? prob extending into next year
-        returnEndDate = currentYear + 1 + '-' + returnEndDate
-    } else {
-        returnEndDate = currentYear + '-' + returnEndDate
+    if (returnDate !== "" && returnEndDate !== "") {
+        if (returnEndDate < returnDate) { //end before start? prob extending into next year
+            returnEndDate = currentYear + 1 + '-' + returnEndDate
+        } else {
+            returnEndDate = currentYear + '-' + returnEndDate
+        }
+        returnDate = currentYear + '-' + returnDate
     }
-    returnDate = currentYear + '-' + returnDate
-
     //TODO: logic regarding month "0" (today)
     //try 1 time only
     if (!timeModified && !timeRangeExtracted && !timeRangeRejected) {
