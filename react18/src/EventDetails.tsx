@@ -742,11 +742,23 @@ interface UserAccountControlProps {
     setAuthOpen: SidebarInfo["setAuthOpen"];
     onUserMenuOpen: SidebarInfo["onUserMenuOpen"];
     user: SidebarInfo["user"];
+    minimized: boolean;
 }
 
-function UserAccountControl({setAuthOpen, onUserMenuOpen, user}: UserAccountControlProps) {
-    if (!user) {
-        return <button className='sidebar-login-button' type='button' onClick={setAuthOpen}>Log in</button>
+function UserAccountControl({setAuthOpen, onUserMenuOpen, user, minimized}: UserAccountControlProps) {
+    if (!minimized) {
+        if (!user) {
+            return <button className='sidebar-login-button' type='button' onClick={setAuthOpen}>Log in</button>
+        }
+    } else {
+        if (!user) {
+            return <button className="sidebar-icon-button" type='button' onClick={setAuthOpen}><img
+                className="sidebar-icon"
+                src={icons["./sidebar-guest.png"]}
+                alt=""
+                aria-hidden="true"
+            /></button>
+        }
     }
 
     return (
@@ -759,6 +771,7 @@ function UserAccountControl({setAuthOpen, onUserMenuOpen, user}: UserAccountCont
             )}
         </button>
     )
+
 }
 
 export function Sidebar({isOpen, onClose, setAuthOpen, onUserMenuOpen, user}: SidebarInfo) {
@@ -775,37 +788,49 @@ export function Sidebar({isOpen, onClose, setAuthOpen, onUserMenuOpen, user}: Si
                 <div className='sidebar-toolbar-left'>
                     <button className='sidebar-icon-button' type='button' aria-label='Close sidebar'
                             onClick={onClose}>
-                        <svg viewBox='0 0 24 24' aria-hidden='true'>
-                            <path d='M5 12h14M13 6l6 6-6 6'/>
-                        </svg>
+                        <img
+                            className="sidebar-arrow"
+                            src={icons["./sidebar-arrow-right.png"]}
+                            alt=""
+                            aria-hidden="true"
+                        />
                     </button>
                 </div>
                 <div className='sidebar-toolbar-right'>
                     <button className='sidebar-icon-button' type='button' aria-label='Search'>
-                        <svg viewBox='0 0 24 24' aria-hidden='true'>
-                            <circle cx='11' cy='11' r='6.5'/>
-                            <path d='m16 16 4 4'/>
-                        </svg>
+                        <img
+                            className="sidebar-icon"
+                            src={icons["./sidebar-search.png"]}
+                            alt=""
+                            aria-hidden="true"
+                        />
                     </button>
                     <button className='sidebar-icon-button' type='button' aria-label='Notifications'>
-                        <svg viewBox='0 0 24 24' aria-hidden='true'>
-                            <path d='M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9'/>
-                            <path d='M10 21h4'/>
-                        </svg>
+                        <img
+                            className="sidebar-icon"
+                            src={icons["./sidebar-notifications.png"]}
+                            alt=""
+                            aria-hidden="true"
+                        />
                     </button>
                     <button className='sidebar-icon-button' type='button' aria-label='Add'>
-                        <svg viewBox='0 0 24 24' aria-hidden='true'>
-                            <path d='M12 5v14M5 12h14'/>
-                        </svg>
+                        <img
+                            className="sidebar-icon"
+                            src={icons["./sidebar-add.png"]}
+                            alt=""
+                            aria-hidden="true"
+                        />
                     </button>
                     <button className='sidebar-icon-button' type='button' aria-label='Settings'>
-                        <svg viewBox='0 0 24 24' aria-hidden='true'>
-                            <circle cx='12' cy='12' r='3'/>
-                            <path
-                                d='M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.09A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.12.37.34.7.65.93.3.23.67.36 1.05.38h.09v4h-.09A1.7 1.7 0 0 0 19.4 15Z'/>
-                        </svg>
+                        <img
+                            className="sidebar-icon"
+                            src={icons["./sidebar-settings.png"]}
+                            alt=""
+                            aria-hidden="true"
+                        />
                     </button>
-                    <UserAccountControl setAuthOpen={setAuthOpen} onUserMenuOpen={onUserMenuOpen} user={user}/>
+                    <UserAccountControl setAuthOpen={setAuthOpen} onUserMenuOpen={onUserMenuOpen} user={user}
+                                        minimized={false}/>
                 </div>
             </div>
             <div className='app-sidebar-section'>
@@ -859,38 +884,52 @@ export function MinimizedBar({isOpen, onClose, setAuthOpen, onUserMenuOpen, user
                     type="button"
                     aria-label="Expand sidebar"
                     onClick={onClose}>
-                ←
+                <img
+                    className="sidebar-arrow"
+                    src={icons["./sidebar-arrow-left.png"]}
+                    alt=""
+                    aria-hidden="true"
+                />
             </button>
 
             <nav className="sidebar-icon-list" aria-label="Sidebar tools">
-                <UserAccountControl setAuthOpen={setAuthOpen} onUserMenuOpen={onUserMenuOpen} user={user}/>
+                <UserAccountControl setAuthOpen={setAuthOpen} onUserMenuOpen={onUserMenuOpen} user={user}
+                                    minimized={true}/>
 
                 <button className="sidebar-icon-button" type="button" aria-label="Settings">
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <circle cx="12" cy="12" r="3"/>
-                        <path
-                            d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.09A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.12.37.34.7.65.93.3.23.67.36 1.05.38h.09v4h-.09A1.7 1.7 0 0 0 19.4 15Z"/>
-                    </svg>
+                    <img
+                        className="sidebar-icon"
+                        src={icons["./sidebar-settings.png"]}
+                        alt=""
+                        aria-hidden="true"
+                    />
                 </button>
 
                 <button className="sidebar-icon-button" type="button" aria-label="Notifications">
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/>
-                        <path d="M10 21h4"/>
-                    </svg>
+                    <img
+                        className="sidebar-icon"
+                        src={icons["./sidebar-notifications.png"]}
+                        alt=""
+                        aria-hidden="true"
+                    />
                 </button>
 
                 <button className="sidebar-icon-button" type="button" aria-label="Add">
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M12 5v14M5 12h14"/>
-                    </svg>
+                    <img
+                        className="sidebar-icon"
+                        src={icons["./sidebar-add.png"]}
+                        alt=""
+                        aria-hidden="true"
+                    />
                 </button>
 
                 <button className="sidebar-icon-button" type="button" aria-label="Search">
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <circle cx="11" cy="11" r="6.5"/>
-                        <path d="m16 16 4 4"/>
-                    </svg>
+                    <img
+                        className="sidebar-icon"
+                        src={icons["./sidebar-search.png"]}
+                        alt=""
+                        aria-hidden="true"
+                    />
                 </button>
             </nav>
         </aside>

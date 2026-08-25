@@ -317,12 +317,24 @@ h2 {
 
 .sidebar-toolbar {
     min-height: 76px;
-    padding: 0 24px;
+    padding: 0 12px 0 24px;
     display: flex;
     align-items: center;
     justify-content: space-between;
 }
-
+.sidebar-icon {
+    width: 1.4em;
+    height: 1.4em;
+    display: block;
+    object-fit: contain;
+    justify-self: center;
+}
+.sidebar-arrow{
+    width: 1.6em;
+    height: 1.6em;
+    display: block;
+    object-fit: contain;
+}
 .sidebar-toolbar-left,
 .sidebar-toolbar-right {
     display: flex;
@@ -347,24 +359,16 @@ h2 {
     cursor: pointer;
 }
 
-.sidebar-icon-button svg {
-    width: 24px;
-    height: 24px;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 1.8;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
 
 .sidebar-login-button {
-    padding: 0.57em 1.23em;
+    margin-left: -12px;
+    padding: 0.5em 1em;
     border: none;
     border-radius: 999em;
-    background: var(--colour-purple-extra-dark);
+    background: transparent;
     color: white;
     font: inherit;
-    font-size: 0.99em;
+    font-size: 1.15em;
     font-weight: 600;
     white-space: nowrap;
     cursor: pointer;
