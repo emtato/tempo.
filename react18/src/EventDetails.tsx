@@ -296,6 +296,13 @@ export default function Popup({
             const nextEndTime = hours * 60 + minutes;
             handleEndTimeChange(nextEndTime);
         }
+        //date
+        if (startDate !== "") {
+            setSelectedStartDate(startDate);
+        }
+        if (endDate !== "") {
+            setSelectedEndDate(endDate);
+        }
 
         if (location != "") {
             //TODO

@@ -16,6 +16,25 @@ export interface TitleExtractionResult {
     rangeInProgress: boolean
 }
 
+const MONTH_ALIASES: Map<string, number> = new Map([
+    ["ja", 1], ["jan", 1], ["january", 1],
+    ["fe", 2], ["feb", 2], ["february", 2],
+    ["mar", 3], ["march", 3],
+    ["ap", 4], ["apr", 4], ["april", 4],
+    ["may", 5],
+    ["jun", 6], ["june", 6],
+    ["jul", 7], ["july", 7],
+    ["au", 8], ["aug", 8], ["august", 8],
+    ["sep", 9], ["sept", 9], ["september", 9],
+    ["oc", 10], ["oct", 10], ["october", 10],
+    ["no", 11], ["nov", 11], ["november", 11],
+    ["de", 12], ["dec", 12], ["december", 12],
+    ["now", 0], ["today", 0]
+]);
+const MONTH_RULES: Map<number, number> = new Map([
+    [1, 31], [2, 28], [3, 31], [4, 30], [5, 31], [6, 30], [7, 31], [8, 31], [9, 30], [10, 31], [11, 30], [12, 31]
+]);
+
 function convertTo24Hour(hour: number, period: "am" | "pm"): number {
     if (period === "pm" && hour !== 12) {
         return hour + 12
@@ -56,6 +75,29 @@ function formatRangeTime(time: string): string {
 }
 
 function extractDates(title: string) {
+    const monthFirstDatePattern = String.raw`([a-z]{2,9})\s*(0?[1-9]|[12]\d|3[01])`;
+    const dateRangePattern = new RegExp(String.raw`(?:from\s+)?${monthFirstDatePattern}\s*(?:-|to|until|through)\s*${monthFirstDatePattern}`, "i");
+    const dateRangeMatch = title.match(dateRangePattern);
+    if (dateRangeMatch) {
+        const startMonth = MONTH_ALIASES.get(dateRangeMatch[1])
+        const endMonth = MONTH_ALIASES.get(dateRangeMatch[3])
+        if (startMonth == undefined || endMonth == undefined) return // no actual months found
+
+        const startDay = Number(dateRangeMatch[2])
+        const endDay = Number(dateRangeMatch[4])
+        const startMonthMaxDays = MONTH_RULES.get(startMonth)
+        const endMonthMaxDays = MONTH_RULES.get(endMonth)
+        if (startMonthMaxDays === undefined || endMonthMaxDays === undefined) return
+
+        if (startDay > endDay && startMonth == endMonth) return // evil user input
+        if (startDay > startMonthMaxDays || endDay > endMonthMaxDays) return //more evil user input
+
+        //assume if startMonth > EndMonth, its like end of year (dec-feb). TODO: implement better flexibility: select year possibility
+        const startDate = String(startMonth).padStart(2, "0") + "-" + String(startDay).padStart(2, "0")
+        const endDate = String(endMonth).padStart(2, "0") + "-" + String(endDay).padStart(2, "0")
+        return [startDate, endDate]
+    }
+
 
 }
 
@@ -84,6 +126,18 @@ export const simpleTimeLocationExtractor = (title: string, timeModified: boolean
         returnEndTime = formatRangeTime(timeRangeMatch[2])
         returnTitle = returnTitle.replace(timeRangeMatch[0], "").replace(/\s+/g, " ").trim();
     }
+    //try date range
+    [returnDate, returnEndDate] = extractDates(title) ?? ["", ""]
+    const currentYear = new Date().getFullYear() //TODO: eventually depend on clicked date's year, not current year
+    if (returnEndDate < returnDate) { //end before start? prob extending into next year
+        returnEndDate = currentYear + 1 + '-' + returnEndDate
+    } else {
+        returnEndDate = currentYear + '-' + returnEndDate
+    }
+    returnDate = currentYear + '-' + returnDate
+
+    //TODO: logic regarding month "0" (today)
+    //try 1 time only
     if (!timeModified && !timeRangeExtracted && !timeRangeRejected) {
         if ((/\bnoon\b/i).test(title) || (/\bmidnight\b/i).test(title)) {
             if ((/\bnoon\b/i).test(title) && !(/\bmidnight\b/i).test(title)) {
