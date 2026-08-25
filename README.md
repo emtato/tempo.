@@ -60,18 +60,26 @@ The interface extends FullCalendar with a recentering continuous-month view that
 ```text
 .
 ├── react18/
-│   ├── src/Calendarapp.tsx         # Calendar views and interaction state
-│   ├── src/EventDetails.tsx        # Event editor and form behavior
-│   ├── src/components/             # Reusable interface controls
-│   ├── src/api/                    # REST client
-│   └── src/utils/                  # Title time/location interpretation
+│   └── src/
+│       ├── Calendarapp.tsx         # Calendar views, continuous scrolling, and app state
+│       ├── EventDetails.tsx        # Event editor, sidebar, and form behavior
+│       ├── components/             # Auth, account, and reusable interface controls
+│       ├── api/
+│       │   ├── auth-client.ts      # Better Auth browser client
+│       │   └── eventsAPI.ts        # Account API and signed-out local persistence gateway
+│       ├── utils/                  # Deterministic title, date, time, and location parsing
+│       ├── data/defaultEvents.json # Initial signed-out calendar data
+│       ├── index.css              # Calendar and responsive layout styles
+│       └── auth-user.css          # Authentication and account styles
 ├── backend/
 │   └── src/
-│       ├── routes/                 # API paths
-│       ├── controllers/            # HTTP translation
-│       ├── services/               # Calendar workflows
-│       ├── repositories/           # MongoDB operations
-│       ├── domain/                 # Shared event shapes
+│       ├── auth.ts                 # Better Auth server and MongoDB adapter
+│       ├── middleware/             # Session-to-calendar ownership boundary
+│       ├── routes/                 # REST API paths
+│       ├── controllers/            # HTTP request and response translation
+│       ├── services/               # Calendar application workflows
+│       ├── repositories/           # Account-scoped MongoDB operations
+│       ├── domain/                 # Calendar event types
 │       └── config/                 # Environment and database setup
 └── .github/workflows/deploy.yml    # Frontend deployment workflow
 ```
@@ -80,14 +88,15 @@ The interface extends FullCalendar with a recentering continuous-month view that
 
 | Area | Tools |
 | --- | --- |
-| Frontend | React 18, TypeScript, Vite |
-| Calendar UI | FullCalendar 7 |
-| Date handling | Temporal polyfill |
-| Backend | Node.js, Express 5, TypeScript |
-| Authentication | Better Auth |
-| Persistence | MongoDB for accounts, browser storage for signed-out users |
-| Styling | Handwritten responsive CSS, Nunito variable font |
-| Deployment | GitHub Actions and GitHub Pages for the frontend; Railway backend |
+| Frontend | React 18, TypeScript, Vite 6 |
+| Calendar UI | FullCalendar 7 with a custom continuous-month view |
+| Natural-language parsing | Deterministic TypeScript parsing for dates, locations, and 12/24-hour time values and ranges |
+| Date handling | Temporal polyfill and minutes-after-midnight time representation |
+| Authentication | Better Auth with username login and cookie-backed sessions |
+| Backend API | Node.js, Express 5, TypeScript, REST |
+| Persistence | MongoDB for account calendars; `localStorage` for signed-out calendars |
+| Styling | Handwritten responsive CSS and Nunito variable font |
+| Deployment | GitHub Actions and GitHub Pages for the frontend; Railway for the backend |
 
 
 ## Run locally
