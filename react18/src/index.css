@@ -616,6 +616,38 @@ h2 {
     0 0.3em 0.70em rgba(60, 64, 67, 0.1);
     color: var(--colour-text);
 }
+.popup-field-icon {
+    width: 2em;
+    height: 2em;
+    display: block;
+    object-fit: contain;
+    justify-self: center;
+    margin-left: -1.65em;
+}
+.popup-delete-button-icon {
+    object-fit: contain;
+    justify-self: center;
+    margin-left: -0.15em;
+    margin-top: -0.15em;
+    width: 2em;
+    height: 2em;
+    grid-area: 1 / 1; /* occupy same area*/
+}
+.popup-delete-button-icon--default {
+    opacity: 1;
+}
+
+.popup-delete-button-icon--hover {
+    opacity: 0;
+}
+
+.delete-button:hover .popup-delete-button-icon--default {
+    opacity: 0;
+}
+
+.delete-button:hover .popup-delete-button-icon--hover {
+    opacity: 1;
+}
 
 .delete-undo {
     position: fixed;

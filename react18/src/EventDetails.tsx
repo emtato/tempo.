@@ -6,7 +6,7 @@ import {DEMO_USER_ID, saveCalendarEvent} from "./api/eventsAPI";
 import TimeComboBox from "./components/TimeComboBox";
 import type {DeletedEvent} from "./Calendarapp";
 import type {authClient} from "./api/auth-client";
-
+import icons from "./resources/icons/";
 // ----------------------------------------------------
 // Configuration
 // ----------------------------------------------------
@@ -530,7 +530,12 @@ export default function Popup({
                             }}
                         />
                         <div className="form-row">
-                            <span className="row-icon">◷</span>
+                            <img
+                                className="popup-field-icon"
+                                src={icons["./popup-date-time.png"]}
+                                alt=""
+                                aria-hidden="true"
+                            />
                             <div className="row-content">
                                 <div className="date-range">
                                     <select
@@ -637,17 +642,14 @@ export default function Popup({
                             </div>
                         </div>
                         <div className="form-row">
-                            <svg
-                                className="row-icon guest-icon"
-                                viewBox="0 0 24 24"
-                                width="1em"
-                                height="1em"
-                                fill="currentColor"
+
+                            <img
+                                className="popup-field-icon"
+                                src={icons["./popup-guests.png"]}
+                                alt=""
                                 aria-hidden="true"
-                            >
-                                <path
-                                    d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z"/>
-                            </svg>
+                            />
+
                             <input
                                 className="guests_location-input"
                                 value={guests}
@@ -655,54 +657,72 @@ export default function Popup({
                                 placeholder="Add guests"></input>
                         </div>
                         <div className="form-row">
-                            <span className="row-icon row-icon-shift-left">⌖</span>
-                            <input
-                                className="guests_location-input"
-                                value={location}
-                                onChange={(event) => setLocation(event.target.value)}
-                                placeholder="Add location"></input>
+                            <img
+                                className="popup-field-icon"
+                                src={icons["./popup-location.png"]}
+                                alt=""
+                                aria-hidden="true"
+                            /> <input
+                            className="guests_location-input"
+                            value={location}
+                            onChange={(event) => setLocation(event.target.value)}
+                            placeholder="Add location"></input>
                         </div>
                         <div className="form-row">
-                            <span className="row-icon row-icon-shift-left">▣</span>
-                            <label className="calendar-select">
-                                <select
-                                    aria-label="Calendar type"
-                                    value={calendarType}
-                                    onChange={(event) => setCalendarType(event.target.value)}
-                                >
-                                    {CALENDAR_OPTIONS.map((calendar) => (
-                                        <option key={calendar.value} value={calendar.value}>
-                                            {calendar.label}
-                                        </option>
-                                    ))}
-                                </select>
-                                <span
-                                    className="calendar-color"
-                                    style={{backgroundColor: selectedCalendar.color}}
-                                />
-                                <span className="calendar-arrow" aria-hidden="true">▾</span>
-                            </label>
+                            <img
+                                className="popup-field-icon"
+                                src={icons["./popup-calendar.png"]}
+                                alt=""
+                                aria-hidden="true"
+                            /> <label className="calendar-select">
+                            <select
+                                aria-label="Calendar type"
+                                value={calendarType}
+                                onChange={(event) => setCalendarType(event.target.value)}
+                            >
+                                {CALENDAR_OPTIONS.map((calendar) => (
+                                    <option key={calendar.value} value={calendar.value}>
+                                        {calendar.label}
+                                    </option>
+                                ))}
+                            </select>
+                            <span
+                                className="calendar-color"
+                                style={{backgroundColor: selectedCalendar.color}}
+                            />
+                            <span className="calendar-arrow" aria-hidden="true">▾</span>
+                        </label>
                         </div>
                         <div className="form-row description-row">
-                            <span className="row-icon row-icon-shift-left">☰</span>
-                            <textarea
-                                value={description}
-                                className="description-input"
-                                placeholder="Add description"
-                                onChange={(event) => setDescription(event.target.value)}
-                                rows={2}
-                            />
+                            <img
+                                className="popup-field-icon"
+                                src={icons["./popup-description.png"]}
+                                alt=""
+                                aria-hidden="true"
+                            /> <textarea
+                            value={description}
+                            className="description-input"
+                            placeholder="Add description"
+                            onChange={(event) => setDescription(event.target.value)}
+                            rows={2}
+                        />
                         </div>
                     </form>
                     <div className="popup-actions">
                         <button className="delete-button"
                                 onClick={createDeleteEventPackage} type="button" aria-label="Delete event">
-                            <svg viewBox="0 0 24 24" aria-hidden="true">
-                                <path d="M4 7h16"/>
-                                <path d="M9 7V4h6v3"/>
-                                <path d="m6 7 1 13h10l1-13"/>
-                                <path d="M10 11v5M14 11v5"/>
-                            </svg>
+                            <img
+                                className="popup-delete-button-icon"
+                                src={icons["./popup-delete.png"]}
+                                alt=""
+                                aria-hidden="true"
+                            />
+                            <img
+                                className="popup-delete-button-icon popup-delete-button-icon--hover"
+                                src={icons["./popup-delete-red.png"]}
+                                alt=""
+                                aria-hidden="true"
+                            />
                         </button>
                         <button className="text-button" type="button">More options</button>
                         <button className="save-button" type="submit" form="event-form">Save</button>
