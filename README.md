@@ -1,4 +1,4 @@
-# tempo. : Keep pace with your day.
+# tempo. : keep pace with your day.
 
 An intent first calendar built to make planning feel faster, clearer, and more natural.
 
