@@ -52,18 +52,26 @@ export async function getCalendarEventById(eventId: string): Promise<CalendarEve
  */
 export async function saveCalendarEvent(event: SaveCalendarEventInput, userId: string): Promise<CalendarEvent> {
     //run time/location extractor again in case the user saved it before timer ran out
-    const [returnTime, returnEndTime, returnlocation, returnTitle, rangeInProgress] = simpleTimeLocationExtractor(event.title, false, false)
+    const extractionResult = simpleTimeLocationExtractor(event.title, false, false)
+    const returnTitle = extractionResult.returnTitle;
+        const startTime = extractionResult.startTime;
+        const endTime = extractionResult.endTime;
+        const startDate = extractionResult.startDate;
+        const endDate = extractionResult.endDate;
+        const location = extractionResult.location;
+        const requiresConfirmation = extractionResult.requiresConfirmation;
+        const rangeInProgress = extractionResult.rangeInProgress;
     event.title = returnTitle
-    if (returnTime != "") {
-        const [hours, minutes] = returnTime.split(":").map(Number);
+    if (startTime != "") {
+        const [hours, minutes] = startTime.split(":").map(Number);
         event.startTime = hours * 60 + minutes;
     }
-    if (returnEndTime != "") {
-        const [hours, minutes] = returnEndTime.split(":").map(Number);
+    if (endTime != "") {
+        const [hours, minutes] = endTime.split(":").map(Number);
         event.endTime = hours * 60 + minutes;
     }
-    if (returnlocation != "") {
-        event.extendedProps.location = returnlocation
+    if (location != "") {
+        event.extendedProps.location = location
     }
     if (userId === DEMO_USER_ID) {
         const localEvent = convertToCalendarEvent(event)

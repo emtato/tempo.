@@ -5,7 +5,18 @@
 //also extracts time and date ranges
 //return time in 24h format
 
-const convertTo24Hour = (hour: number, period: "am" | "pm"): number => {
+export interface TitleExtractionResult {
+    returnTitle: string
+    startDate: string
+    endDate: string
+    startTime: string
+    endTime: string
+    requiresConfirmation: boolean
+    location: string
+    rangeInProgress: boolean
+}
+
+function convertTo24Hour(hour: number, period: "am" | "pm"): number {
     if (period === "pm" && hour !== 12) {
         return hour + 12
     }
@@ -15,7 +26,7 @@ const convertTo24Hour = (hour: number, period: "am" | "pm"): number => {
     return hour
 }
 
-const formatRangeTime = (time: string): string => {
+function formatRangeTime(time: string): string {
     let timeWithoutPeriod = time.trim().toLowerCase()
     let period: "am" | "pm" | undefined
 
@@ -44,8 +55,12 @@ const formatRangeTime = (time: string): string => {
     return `${String(hour).padStart(2, "0")}:${minute}`
 }
 
+function extractDates(title: string) {
+
+}
+
 export const simpleTimeLocationExtractor = (title: string, timeModified: boolean,
-                                            locationModified: boolean): [string, string, string, string, boolean] => {
+                                            locationModified: boolean): TitleExtractionResult => {
     let rangeInProgress = false
     let returnTime = ""
     let returnEndTime = ""
@@ -55,10 +70,11 @@ export const simpleTimeLocationExtractor = (title: string, timeModified: boolean
     let returnTitle = title
     let timeRangeExtracted = false
     let dateRangeExtracted = false
+    let requiresConfirmation = false
     //try time range
     if (title.includes("to") || title.includes("-")) rangeInProgress = true
 
-    const timeRangePattern = /(?<!\w)((?:(?:0?[1-9]|1[0-2])(?:[.:][0-5]\d)?\s*[ap](?:\.?m\.?)|(?:[01]?\d|2[0-3])(?:[.:][0-5]\d)?))\s*(?:-|to)\s*((?:(?:0?[1-9]|1[0-2])(?:[.:][0-5]\d)?\s*[ap](?:\.?m\.?)|(?:[01]?\d|2[0-3])(?:[.:][0-5]\d)?))(?!\w)/i;
+    const timeRangePattern = /(?:from\s+)?(?<!\w)((?:(?:0?[1-9]|1[0-2])(?:[.:][0-5]\d)?\s*[ap](?:\.?m\.?)|(?:[01]?\d|2[0-3])(?:[.:][0-5]\d)?))\s*(?:-|to)\s*((?:(?:0?[1-9]|1[0-2])(?:[.:][0-5]\d)?\s*[ap](?:\.?m\.?)|(?:[01]?\d|2[0-3])(?:[.:][0-5]\d)?))(?!\w)/i;
     const malformedTimeRangePattern = /(?:(?<!\w)(?:0|1[3-9]|2[0-3])(?:[.:][0-5]\d)?\s*[ap](?:\.?m\.?)(?!\w)\s*(?:-|to)|(?:-|to)\s*(?<!\w)(?:0|1[3-9]|2[0-3])(?:[.:][0-5]\d)?\s*[ap](?:\.?m\.?)(?!\w))/i
     const timeRangeRejected = malformedTimeRangePattern.test(title)
     const timeRangeMatch = timeRangeRejected ? null : title.match(timeRangePattern);
@@ -149,5 +165,14 @@ export const simpleTimeLocationExtractor = (title: string, timeModified: boolean
     if (!locationModified) {
         //TODO
     }
-    return [returnTime, returnEndTime, returnLocation, returnTitle, rangeInProgress]
+    return {
+        returnTitle,
+        startDate: returnDate,
+        endDate: returnEndDate,
+        startTime: returnTime,
+        endTime: returnEndTime,
+        requiresConfirmation: false,
+        location: returnLocation,
+        rangeInProgress: rangeInProgress
+    }
 }

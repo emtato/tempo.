@@ -1,7 +1,7 @@
 import React, {useState, type CSSProperties, useRef} from 'react'
 import {useEffect} from "react";
 import {Temporal} from 'temporal-polyfill'
-import {simpleTimeLocationExtractor} from "./utils/simple_time_location_extractor";
+import {simpleTimeLocationExtractor, TitleExtractionResult} from "./utils/simple_time_location_extractor";
 import {DEMO_USER_ID, saveCalendarEvent} from "./api/eventsAPI";
 import TimeComboBox from "./components/TimeComboBox";
 import type {DeletedEvent} from "./Calendarapp";
@@ -260,38 +260,47 @@ export default function Popup({
     // Input and title handlers
     // ------------------------------------------------
 
-    function handleTitleInputChange([returnTime, returnEndTime, returnLocation, returnTitle, rangeInProgress]: [string, string, string, string, boolean]) {
+    function handleTitleInputChange(extractionResult: TitleExtractionResult) {
+        const returnTitle = extractionResult.returnTitle;
+        const startTime = extractionResult.startTime;
+        const endTime = extractionResult.endTime;
+        const startDate = extractionResult.startDate;
+        const endDate = extractionResult.endDate;
+        const location = extractionResult.location;
+        const requiresConfirmation = extractionResult.requiresConfirmation;
+        const rangeInProgress = extractionResult.rangeInProgress;
+        //title
         if (titleCleanupTimer.current !== null) {
             clearTimeout(titleCleanupTimer.current);
             titleCleanupTimer.current = null;
-        }
-        if (returnTime !== "") {
-            const [hours, minutes] = returnTime.split(":").map(Number);
-
-            const nextStartTime = hours * 60 + minutes;
-
-            handleStartTimeChange(nextStartTime);
-        }
-        if (returnEndTime !== "") {
-            const [hours, minutes] = returnEndTime.split(":").map(Number);
-            const nextEndTime = hours * 60 + minutes;
-            handleEndTimeChange(nextEndTime);
-        }
-
-        if (returnLocation != "") {
-            //TODO
         }
         if (rangeInProgress) {
             titleCleanupTimer.current = setTimeout(() => {
                 setTitle(returnTitle);
                 titleCleanupTimer.current = null;
-            }, 3567);
+            }, 1567);
         } else {
             titleCleanupTimer.current = setTimeout(() => {
                 setTitle(returnTitle);
                 titleCleanupTimer.current = null;
             }, 967);
         }
+        //time
+        if (startTime !== "") {
+            const [hours, minutes] = startTime.split(":").map(Number);
+            const nextStartTime = hours * 60 + minutes;
+            handleStartTimeChange(nextStartTime);
+        }
+        if (endTime !== "") {
+            const [hours, minutes] = endTime.split(":").map(Number);
+            const nextEndTime = hours * 60 + minutes;
+            handleEndTimeChange(nextEndTime);
+        }
+
+        if (location != "") {
+            //TODO
+        }
+
     }
 
 // ------------------------------------------------
