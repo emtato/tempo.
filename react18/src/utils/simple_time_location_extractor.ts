@@ -89,16 +89,28 @@ function formatMinutesAsTime(timeInMinutes: number): string {
 }
 
 function extractDates(title: string) {
-    const monthFirstDatePattern = String.raw`([a-z]{2,9})\s*(0?[1-9]|[12]\d|3[01])`;
+    const monthFirstDatePattern = String.raw`(?:(?!now\b)([a-z]{2,9})\s*(0?[1-9]|[12]\d|3[01])(?!\d)|(\bnow\b))`;
     const dateRangePattern = new RegExp(String.raw`(?:from\s+)?${monthFirstDatePattern}\s*(?:-|to|until|through)\s*${monthFirstDatePattern}`, "i");
     const dateRangeMatch = title.match(dateRangePattern);
     if (dateRangeMatch) {
-        const startMonth = MONTH_ALIASES.get(dateRangeMatch[1])
-        const endMonth = MONTH_ALIASES.get(dateRangeMatch[3])
+        const startMonthText = (dateRangeMatch[1] ?? dateRangeMatch[3]).toLowerCase()
+        const endMonthText = (dateRangeMatch[4] ?? dateRangeMatch[6]).toLowerCase()
+        let startMonth = MONTH_ALIASES.get(startMonthText)
+        let endMonth = MONTH_ALIASES.get(endMonthText)
         if (startMonth == undefined || endMonth == undefined) return // no actual months found
 
-        const startDay = Number(dateRangeMatch[2])
-        const endDay = Number(dateRangeMatch[4])
+        let startDay = Number(dateRangeMatch[2])
+        let endDay = Number(dateRangeMatch[5])
+        const currentDate = new Date()
+
+        if (startMonth == 0) { //set month and date to current values if its now
+            startMonth = currentDate.getMonth() + 1
+            startDay = currentDate.getDate()
+        }
+        if (endMonth == 0) {
+            endMonth = currentDate.getMonth() + 1
+            endDay = currentDate.getDate()
+        }
         const startMonthMaxDays = MONTH_RULES.get(startMonth)
         const endMonthMaxDays = MONTH_RULES.get(endMonth)
         if (startMonthMaxDays === undefined || endMonthMaxDays === undefined) return
@@ -109,7 +121,7 @@ function extractDates(title: string) {
         //assume if startMonth > EndMonth, its like end of year (dec-feb). TODO: implement better flexibility: select year possibility
         const startDate = String(startMonth).padStart(2, "0") + "-" + String(startDay).padStart(2, "0")
         const endDate = String(endMonth).padStart(2, "0") + "-" + String(endDay).padStart(2, "0")
-        return [startDate, endDate]
+        return [startDate, endDate, dateRangeMatch[0]]
     }
 
 }
@@ -160,7 +172,8 @@ export const simpleTimeLocationExtractor = (title: string, timeModified: boolean
         returnTitle = returnTitle.replace(timeRangeMatch[0], "").replace(/\s+/g, " ").trim();
     }
     //try date range
-    [returnDate, returnEndDate] = extractDates(title) ?? ["", ""]
+    let extractedtext = "";
+    [returnDate, returnEndDate, extractedtext] = extractDates(title) ?? ["", "", ""]
     const currentYear = new Date().getFullYear() //TODO: eventually depend on clicked date's year, not current year
     if (returnDate !== "" && returnEndDate !== "") {
         if (returnEndDate < returnDate) { //end before start? prob extending into next year
@@ -170,6 +183,8 @@ export const simpleTimeLocationExtractor = (title: string, timeModified: boolean
         }
         returnDate = currentYear + '-' + returnDate
     }
+    returnTitle = returnTitle.replace(extractedtext, "").replace(/\s+/g, " ").trim();
+
     //TODO: logic regarding month "0" (today)
     //try 1 time only
     if (!timeModified && !timeRangeExtracted && !timeRangeRejected) {
