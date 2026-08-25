@@ -45,12 +45,16 @@ function convertTo24Hour(hour: number, period: "am" | "pm"): number {
     return hour
 }
 
-function formatRangeTime(time: string): [string, boolean] {
+interface ParsedRangeTime {
+    timeInMinutes: number
+    period: "am" | "pm" | undefined
+}
+
+function parseRangeTime(time: string): ParsedRangeTime {
     let timeWithoutPeriod = time.trim().toLowerCase()
     let period: "am" | "pm" | undefined
 
     //The range regex has already validated the time, so finding an "a" or "p" is enough to tell whether an AM/PM suffix is present.
-    let presenceOfPeriod = timeWithoutPeriod.includes("a") || timeWithoutPeriod.includes("p")
     const amIndex = timeWithoutPeriod.indexOf("a")
     const pmIndex = timeWithoutPeriod.indexOf("p")
     if (amIndex !== -1) {
@@ -66,13 +70,22 @@ function formatRangeTime(time: string): [string, boolean] {
         ? timeWithoutPeriod.split(":")
         : timeWithoutPeriod.split(".")
     let hour = Number(timeParts[0])
-    const minute = timeParts[1] ?? "00"
-
+    const minute = Number(timeParts[1] ?? "00")
     if (period) {
         hour = convertTo24Hour(hour, period)
     }
 
-    return [`${String(hour).padStart(2, "0")}:${minute}`, presenceOfPeriod]
+    return {
+        timeInMinutes: hour * 60 + minute,
+        period
+    }
+}
+
+function formatMinutesAsTime(timeInMinutes: number): string {
+    const hour = Math.floor(timeInMinutes / 60)
+    const minute = timeInMinutes % 60
+
+    return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`
 }
 
 function extractDates(title: string) {
@@ -99,7 +112,6 @@ function extractDates(title: string) {
         return [startDate, endDate]
     }
 
-
 }
 
 export const simpleTimeLocationExtractor = (title: string, timeModified: boolean,
@@ -123,27 +135,28 @@ export const simpleTimeLocationExtractor = (title: string, timeModified: boolean
     const timeRangeMatch = timeRangeRejected ? null : title.match(timeRangePattern);
     if (timeRangeMatch) {
         timeRangeExtracted = true;
-        let presenceOfPeriodFirst = false;
-        let presenceOfPeriodSecond = false;
-        [returnTime, presenceOfPeriodFirst] = formatRangeTime(timeRangeMatch[1]);
-        [returnEndTime, presenceOfPeriodSecond] = formatRangeTime(timeRangeMatch[2]);
-        if (returnEndTime < returnTime) { //example: 6am-1 (pm assumed)
-            const hourString = returnEndTime.split(":")[0]
-            const minuteString = returnEndTime.split(":")[1]
-            const newHour = convertTo24Hour(Number(hourString), "pm")
-            returnEndTime = `${String(newHour).padStart(2, "0")}:${minuteString}`
+        const parsedStartTime = parseRangeTime(timeRangeMatch[1])
+        const parsedEndTime = parseRangeTime(timeRangeMatch[2])
+        let startTimeMinutes = parsedStartTime.timeInMinutes
+        let endTimeMinutes = parsedEndTime.timeInMinutes
+
+        if (endTimeMinutes < startTimeMinutes) { //example: 6am-1 (pm assumed)
+            const endHour = Math.floor(endTimeMinutes / 60)
+            const endMinute = endTimeMinutes % 60
+            const newEndHour = convertTo24Hour(endHour, "pm")
+            endTimeMinutes = newEndHour * 60 + endMinute
         }
-        if (!presenceOfPeriodFirst) { //first time's period not specified and hour + 12 < endTime: assume they meant both pm
-            const hourNumber = Number(returnTime.split(":")[0])
-            const minuteNumber = Number(returnTime.split(":")[1])
-            const endHourNumber = Number(returnEndTime.split(":")[0])
-            const endMinuteNumber = Number(returnEndTime.split(":")[1])
-            const startTimeMinutesAdd12h = (hourNumber * 60) + minuteNumber + 12 * 60
-            const endtimeMinutes = (endHourNumber * 60) + endMinuteNumber
-            if(startTimeMinutesAdd12h < endtimeMinutes) {
-                returnTime = convertTo24Hour(parseInt(returnTime.split(":")[0]), "pm") + ":" + minuteNumber
+
+        if (parsedStartTime.period === undefined && parsedEndTime.period === "pm") {
+            //first time's period not specified, and hour + 12 < endTime: assume they meant both pm
+            const startTimeMinutesAdd12h = startTimeMinutes + 12 * 60
+            if (startTimeMinutesAdd12h < endTimeMinutes) {
+                startTimeMinutes = startTimeMinutesAdd12h
             }
         }
+
+        returnTime = formatMinutesAsTime(startTimeMinutes)
+        returnEndTime = formatMinutesAsTime(endTimeMinutes)
         returnTitle = returnTitle.replace(timeRangeMatch[0], "").replace(/\s+/g, " ").trim();
     }
     //try date range
