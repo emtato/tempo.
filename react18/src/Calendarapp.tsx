@@ -1,14 +1,7 @@
 import FullCalendar from '@fullcalendar/react'
 import type {
-    CalendarApi,
-    CalendarOptions,
-    CalendarRef,
-    DateClickInfo,
-    DateSelectInfo,
-    EventClickInfo,
-    EventDisplayInfo,
-    EventSourceFuncInfo,
-    SingleMonthInfo,
+    CalendarApi, CalendarOptions, CalendarRef, DateClickInfo, DateSelectInfo, EventClickInfo, EventDisplayInfo,
+    EventSourceFuncInfo, SingleMonthInfo,
 } from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/react/daygrid'
 import themePlugin from '@fullcalendar/react/themes/monarch'
@@ -65,7 +58,7 @@ export interface DeletedEvent {
 // Calendar data and date utils
 // ----------------------------------------------------
 
-function toLocalDateString(date: Date) {
+function toLocalDateString(date: Date) { //convert date to YYYY-MM-DD readable format
     const year = date.getFullYear()
     const month = String(date.getMonth() + 1).padStart(2, '0')
     const day = String(date.getDate()).padStart(2, '0')
@@ -79,7 +72,7 @@ const DEFAULT_END_TIME = 10 * 60
 const DRAFT_EVENT_ID = 'draft-event'
 const SCROLLING_MONTH_VIEW = 'scrollingMonth'
 const MONTH_SCROLLER_SELECTOR = '.calendar-month-weeks'
-const DATE_CELL_SELECTOR = '[role="gridcell"][data-date]'
+const DATE_CELL_SELECTOR = '[role="gridcell"][data-date]' //find calendar date cells within the scroller's html
 const RANGE_MONTHS_PER_SIDE = 12
 const RANGE_RECENTER_THRESHOLD_MONTHS = RANGE_MONTHS_PER_SIDE - 1
 const RANGE_RESTORE_RETRIES = 2
@@ -117,16 +110,16 @@ const CALENDAR_VIEWS = {
         monthStartFormat: {
             day: 'numeric',
         },
-        dayCellClass: (info) => info.date.getDate() === 1 ? 'month-boundary-cell' : '', //turn every 1st into a css month boundary cell to target
-        dayCellTopContent: (info) => (
-            <>
-                {info.date.getDate() === 1 && (
-                    <span className="month-boundary-label">
+        //function called for every date cell rendered. returns "month-boundary-cell" if 1st day.
+        dayCellClass: (info) => info.date.getDate() === 1 ? 'month-boundary-cell' : '', //Fullcalendar adds css class to that cell
+
+        dayCellTopContent: (info) => ( //another callbackfor each cell, returning month titles on 1st, give classname for css
+            <>{info.date.getDate() === 1 && (
+                <span className="month-boundary-label">
                         {info.date.toLocaleString(undefined, {month: 'long'})}
                     </span>
-                )}
-                {info.text}
-            </>
+            )}
+                {info.text}</>
         ),
     },
     multiMonthYear: {
@@ -137,74 +130,66 @@ const CALENDAR_VIEWS = {
 
 } satisfies NonNullable<CalendarOptions['views']>
 
-function formatMonthTitle(date: Date) {
-    return monthTitleFormatter.format(date)
-}
-
 // ----------------------------------------------------
 // Infinite month scrolling
 // ----------------------------------------------------
 
-function fromLocalDateString(dateString: string | undefined) {
+function fromLocalDateString(dateString: string | undefined) { //convert string to date object
     if (!dateString) return null
 
     const [year, month, day] = dateString.split('-').map(Number)
-    return year && month && day
-        ? new Date(year, month - 1, day)
-        : null
+    return year && month && day ? new Date(year, month - 1, day) : null
 }
 
+//retrieve reference of the object: scrollable month week rows. object will have browser properties to know scroll position/etc
 function findMonthScroller(root: ParentNode | null) {
     return root?.querySelector<HTMLElement>(MONTH_SCROLLER_SELECTOR) ?? null
 }
 
 function setCalendarToolbarTitle(root: ParentNode | null, date: Date) {
     const toolbarTitle = root?.querySelector<HTMLElement>('[role="heading"]')
-    if (toolbarTitle) toolbarTitle.textContent = formatMonthTitle(date)
+    if (toolbarTitle) toolbarTitle.textContent = monthTitleFormatter.format(date)
 }
 
-function getFirstRenderedDate(scroller: HTMLElement) {
-    return scroller.querySelector<HTMLElement>(DATE_CELL_SELECTOR)?.dataset.date
+function getFirstRenderedDate(scroller: HTMLElement) { //finds the first rendered date cell inside the scrolling calendar and returns that cell’s date
+    return scroller.querySelector<HTMLElement>(DATE_CELL_SELECTOR)?.dataset.date //first date cell used to determine if infinite scroll's loaded cells changed
 }
 
-function findDateRow(scroller: HTMLElement, date: Date) {
+function findDateRow(scroller: HTMLElement, date: Date) { //looks for `[role="gridcell"][data-date="${dateString}"]`
+    // in the built html to find row of specific date. restore scroll position after row found
     const dateString = toLocalDateString(date)
-    return scroller
-        .querySelector<HTMLElement>(`[role="gridcell"][data-date="${dateString}"]`)
+    return scroller.querySelector<HTMLElement>(`[role="gridcell"][data-date="${dateString}"]`)
         ?.closest<HTMLElement>('[role="row"]') ?? null
 }
 
-function getMonthViewportAnchor(
-    scroller: HTMLElement,
-    scrollerBounds: DOMRect,
-    fallbackDate: Date,
-): MonthViewportAnchor {
+function getMonthViewportAnchor(scroller: HTMLElement, scrollerBounds: DOMRect, fallbackDate: Date): MonthViewportAnchor { //save position of scroll before months list extension (infinite scroll)
     for (const row of scroller.querySelectorAll<HTMLElement>('[role="row"]')) {
         const rowBounds = row.getBoundingClientRect()
-        const intersectsScrollerTop = rowBounds.top <= scrollerBounds.top + 1 &&
-            rowBounds.bottom > scrollerBounds.top + 1
-        if (!intersectsScrollerTop) continue
+        const intersectsScrollerTop = rowBounds.top <= scrollerBounds.top + 1 && rowBounds.bottom > scrollerBounds.top + 1
+        if (!intersectsScrollerTop) continue //find which row intersects with scroller's visible area's top
 
-        const rowDate = fromLocalDateString(
-            row.querySelector<HTMLElement>(DATE_CELL_SELECTOR)?.dataset.date,
-        )
-        return {
+        const rowDate = fromLocalDateString(row.querySelector<HTMLElement>(DATE_CELL_SELECTOR)?.dataset.date)
+        return { //saves date and offset of the scroller's position
             date: rowDate ?? fallbackDate,
             offsetFromScrollerTop: rowBounds.top - scrollerBounds.top,
         }
     }
+    return {date: fallbackDate, offsetFromScrollerTop: 0} //failsafe return value
+}
+function applyMonthViewportAnchor(scroller: HTMLElement, anchor: MonthViewportAnchor,
+    anchorRow = findDateRow(scroller, anchor.date)) { //anchorRow calls fn for default val if none passed
+    if (!anchorRow) return
 
-    return {date: fallbackDate, offsetFromScrollerTop: 0}
+    const currentOffset = anchorRow.getBoundingClientRect().top - scroller.getBoundingClientRect().top //find offset of (anchor vs viewport)
+    scroller.scrollTop += currentOffset - anchor.offsetFromScrollerTop //restore scroll position relative to dates pre infinite scroll extension
 }
 
-function updateMonthViewportPresentation(scroller: HTMLElement) {
+function updateMonthViewportPresentation(scroller: HTMLElement) {// runs when scroll
     const scrollerBounds = scroller.getBoundingClientRect()
     const sampleRow = scroller.querySelector<HTMLElement>('[role="row"]')
     const rowHeight = sampleRow?.getBoundingClientRect().height ?? 0
     const switchingLine = scrollerBounds.top + rowHeight
-    const monthStartCells = scroller.querySelectorAll<HTMLElement>(
-        '[role="gridcell"][data-date$="-01"]',
-    )
+    const monthStartCells = scroller.querySelectorAll<HTMLElement>('[role="gridcell"][data-date$="-01"]')
     let activeMonthDate: string | undefined
 
     for (const cell of monthStartCells) {
@@ -213,32 +198,18 @@ function updateMonthViewportPresentation(scroller: HTMLElement) {
 
         const rowBounds = monthStartRow.getBoundingClientRect()
         const distanceFromTop = rowBounds.top - scrollerBounds.top
-        const labelIsVisible = distanceFromTop > 1.9 &&
-            rowBounds.bottom + rowHeight * 0.9 < scrollerBounds.bottom
-        cell.dataset.monthLabelVisible = String(labelIsVisible)
+        if (distanceFromTop > 1.9 && rowBounds.bottom + rowHeight * 0.9 < scrollerBounds.bottom)
+            cell.dataset.monthLabelVisible = "true" //display month label if conditions met (updates html attribute)
 
-        if (rowBounds.top < switchingLine) activeMonthDate = cell.dataset.date
+        if (rowBounds.top < switchingLine) activeMonthDate = cell.dataset.date // switch active month if row's top edge is 1 full cell height below scroller
     }
-
-    return {activeMonthDate, scrollerBounds}
+    return {activeMonthDate, scrollerBounds} //return to update title
 }
 
-function getWheelPixelDelta(event: WheelEvent, pageHeight: number) {
+function getWheelPixelDelta(event: WheelEvent, pageHeight: number) { //normalize wheel movementto pixels from lines or pages
     if (event.deltaMode === WheelEvent.DOM_DELTA_LINE) return event.deltaY * 16
     if (event.deltaMode === WheelEvent.DOM_DELTA_PAGE) return event.deltaY * pageHeight
     return event.deltaY
-}
-
-function applyMonthViewportAnchor(
-    scroller: HTMLElement,
-    anchor: MonthViewportAnchor,
-    anchorRow = findDateRow(scroller, anchor.date),
-) {
-    if (!anchorRow) return
-
-    const currentOffset = anchorRow.getBoundingClientRect().top -
-        scroller.getBoundingClientRect().top
-    scroller.scrollTop += currentOffset - anchor.offsetFromScrollerTop
 }
 
 function formatEventTime(date: Date) {
@@ -969,7 +940,7 @@ export default function CalendarApp() {
                         const scroller = findMonthScroller(viewInfo.el)
                         if (!scroller) return
                         const today = new Date()
-                        setToolbarTitle(formatMonthTitle(today))
+                        setToolbarTitle(monthTitleFormatter.format(today))
                         recenterMonthRange(today)
 
                         const updateTitle = () => {
@@ -985,7 +956,7 @@ export default function CalendarApp() {
                                     activeMonth,
                                 )
                                 visibleMonthRef.current = activeMonth
-                                setToolbarTitle(formatMonthTitle(activeMonth))
+                                setToolbarTitle(monthTitleFormatter.format(activeMonth))
                                 recenterMonthRange(activeMonth, viewportAnchor)
                             }
                         }
@@ -1000,7 +971,7 @@ export default function CalendarApp() {
                             const activeMonth = new Date(date.getFullYear(), date.getMonth(), 1)
                             const top = monthStartRow.offsetTop
                             visibleMonthRef.current = activeMonth
-                            setToolbarTitle(formatMonthTitle(activeMonth))
+                            setToolbarTitle(monthTitleFormatter.format(activeMonth))
                             recenterMonthRange(activeMonth)
 
                             if (behavior === 'smooth') {
@@ -1159,7 +1130,7 @@ export default function CalendarApp() {
                     selectMirror
                     dayMaxEvents={5}
                     singleMonthClass={hideUnmeasuredMonth}
-                    dayCellClass={(dayInfo) => {
+                    dayCellClass={(dayInfo) => { // when rendering every cell, check if date inside the user’s highlighted selection
                         const cellDate = toLocalDateString(dayInfo.date)
 
                         return highlightedRange &&

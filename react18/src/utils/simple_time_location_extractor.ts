@@ -185,7 +185,7 @@ export const simpleTimeLocationExtractor = (title: string, timeModified: boolean
     }
     returnTitle = returnTitle.replace(extractedtext, "").replace(/\s+/g, " ").trim();
 
-    //TODO: logic regarding month "0" (today)
+    //TODO: "until": until 3pm: event lasts now until 3pm. "until aug 30": event from now to aug 30 12am. combine: both (3pm aug 30 or aug 30 3pm)
     //try 1 time only
     if (!timeModified && !timeRangeExtracted && !timeRangeRejected) {
         if ((/\bnoon\b/i).test(title) || (/\bmidnight\b/i).test(title)) {

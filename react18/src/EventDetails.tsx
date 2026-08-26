@@ -297,9 +297,12 @@ export default function Popup({
             handleEndTimeChange(nextEndTime);
         }
         //date
-        if (startDate !== "") {
-            setSelectedStartDate(startDate);
+        if (startDate.split(":")[0] == "00"){
+
         }
+            if (startDate !== "") {
+                setSelectedStartDate(startDate);
+            }
         if (endDate !== "") {
             setSelectedEndDate(endDate);
         }
@@ -752,7 +755,7 @@ function UserAccountControl({setAuthOpen, onUserMenuOpen, user, minimized}: User
         }
     } else {
         if (!user) {
-            return <button className="sidebar-icon-button" type='button' onClick={setAuthOpen}><img
+            return <button className="sidebar-icon-button       " type='button' onClick={setAuthOpen}><img
                 className="sidebar-icon"
                 src={icons["./sidebar-guest.png"]}
                 alt=""
@@ -841,7 +844,10 @@ export function Sidebar({isOpen, onClose, setAuthOpen, onUserMenuOpen, user}: Si
                         <li>Click a date or time slot to create an event.</li>
                         <li>Drag across dates or times to create a longer event.</li>
                         <li>
-                            Add a time to the title, such as <q>Lunch at 2 PM</q>, to set it automatically.
+                            Add a time/time range to the title, such as <q>Lunch from 1-2:15pm</q> to set it automatically.
+                        </li>
+                         <li>
+                            Date ranges, such as <q>now - sept 3</q> also work.
                         </li>
                         <li>
                             Shortcuts: <kbd>N</kbd> creates a new event, <kbd>Enter</kbd> saves,
