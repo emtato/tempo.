@@ -332,7 +332,7 @@ export default function CalendarApp() {
     const alignMonthViewRef = useRef<() => void>(NOOP)
     const visibleMonthRef = useRef(new Date())
     const lastCalendarViewRef = useRef('')
-    const arrowTargetMonthRef = useRef<Date | null>(null)
+    const arrowTargetMonthRef = useRef<Date | null>(null) //most recently requested month to scroll to by arrow
     const arrowTargetTimerRef = useRef(0)
     const initialSidebarResizeHandledRef = useRef(0)
     const initialSidebarScrollRatioRef = useRef(0)
@@ -348,10 +348,12 @@ export default function CalendarApp() {
     const rangeAnchorCleanupRef = useRef<() => void>(NOOP)
     const pendingRangeViewportAnchorRef = useRef<PendingRangeViewportAnchor | null>(null)
 
-    const scrollVisibleMonth = useCallback((offset: number) => {
-        const targetMonth = new Date(arrowTargetMonthRef.current ?? visibleMonthRef.current)
-        targetMonth.setDate(1)
-        targetMonth.setMonth(targetMonth.getMonth() + offset)
+    const scrollVisibleMonth = useCallback((offset: number) => { //scroll to prev/next from arrows in toolbar
+        let targetMonth = null;
+        if (arrowTargetMonthRef.current) targetMonth = new Date(arrowTargetMonthRef.current); //obtain requested month from ref (fast consecutive presses: saves month before even scrolled to)
+        else targetMonth = new Date(visibleMonthRef.current); //else start from visible month, slower presses so can just query visible month
+        targetMonth.setDate(1) //set date to 1st of month (arrows naviguate by month)
+        targetMonth.setMonth(targetMonth.getMonth() + offset) //add or substract month (offset is 1 or -1)
         arrowTargetMonthRef.current = targetMonth
         window.clearTimeout(arrowTargetTimerRef.current)
         arrowTargetTimerRef.current = window.setTimeout(() => {
@@ -361,19 +363,10 @@ export default function CalendarApp() {
     }, [])
 
     const calendarButtons = useMemo<NonNullable<CalendarOptions['buttons']>>(() => ({
-        timeGridDay: {
-            className: 'calendar-wide-view-button',
-        },
-        timeGridWeek: {
-            className: 'calendar-wide-view-button',
-        },
-        scrollingMonth: {
-            text: 'Month',
-            className: 'calendar-wide-view-button',
-        },
-        multiMonthYear: {
-            className: 'calendar-wide-view-button',
-        },
+        timeGridDay: {className: 'calendar-wide-view-button'},
+        timeGridWeek: {className: 'calendar-wide-view-button'},
+        scrollingMonth: {text: 'Month', className: 'calendar-wide-view-button'},
+        multiMonthYear: {className: 'calendar-wide-view-button'},
         prev: {
             className: 'calendar-nav-arrow',
             click: (event) => {
@@ -440,7 +433,7 @@ export default function CalendarApp() {
         if (initialSidebarResizeHandledRef.current == 0) { //not resized yet (this is to fix an initial resize bug)
             const scroller = calendarMainRef.current?.querySelector<HTMLElement>('.calendar-month-weeks')
             if (scroller) {
-                initialSidebarScrollRatioRef.current = scroller.scrollTop / scroller.scrollHeight
+                initialSidebarScrollRatioRef.current = scroller.scrollTop / scroller.scrollHeight //save scroll position to restore later
             }
         }
         setSidebar(false)
@@ -462,14 +455,14 @@ export default function CalendarApp() {
         if (event.target !== event.currentTarget) return
         if (event.propertyName !== 'grid-template-columns') return
         //  handler continues only when .app element itself finished transitioning (sdebar)
-        if (initialSidebarResizeHandledRef.current > 1) return
+        if (initialSidebarResizeHandledRef.current == 1) return //adjust once only
 
         const scroller = calendarMainRef.current?.querySelector<HTMLElement>('.calendar-month-weeks')
         if (!scroller) return
 
         const targetTop = initialSidebarScrollRatioRef.current * scroller.scrollHeight //restore scroll position
         let framesRemaining = 12
-        const align = () => { //continuously adjusts position to restore initial scorlled month bug
+        const align = () => { //continuously adjusts position to restore initial scorlled month bug for 12frames
             if (Math.abs(scroller.scrollTop - targetTop) > 1) {
                 scroller.scrollTo({
                     top: targetTop,
