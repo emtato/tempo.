@@ -176,8 +176,9 @@ function getMonthViewportAnchor(scroller: HTMLElement, scrollerBounds: DOMRect, 
     }
     return {date: fallbackDate, offsetFromScrollerTop: 0} //failsafe return value
 }
+
 function applyMonthViewportAnchor(scroller: HTMLElement, anchor: MonthViewportAnchor,
-    anchorRow = findDateRow(scroller, anchor.date)) { //anchorRow calls fn for default val if none passed
+                                  anchorRow = findDateRow(scroller, anchor.date)) { //anchorRow calls fn for default val if none passed
     if (!anchorRow) return
 
     const currentOffset = anchorRow.getBoundingClientRect().top - scroller.getBoundingClientRect().top //find offset of (anchor vs viewport)
@@ -212,13 +213,6 @@ function getWheelPixelDelta(event: WheelEvent, pageHeight: number) { //normalize
     return event.deltaY
 }
 
-function formatEventTime(date: Date) {
-    const hour = date.getHours()
-    const minute = date.getMinutes()
-    const minuteText = minute ? `:${String(minute).padStart(2, '0')}` : ''
-
-    return `${hour % 12 || 12}${minuteText}${hour < 12 ? 'a' : 'p'}`
-}
 
 function isMonthGridView(viewType: string) {
     return viewType === 'dayGridMonth' ||
@@ -226,13 +220,7 @@ function isMonthGridView(viewType: string) {
         viewType === SCROLLING_MONTH_VIEW
 }
 
-function displayNewEventPlaceholder(
-    calendar: CalendarApi,
-    startDate: string,
-    endDate: string,
-    startTime?: string,
-    endTime?: string,
-) {
+function displayNewEventPlaceholder(calendar: CalendarApi, startDate: string, endDate: string, startTime?: string, endTime?: string) {
     calendar.getEventById(DRAFT_EVENT_ID)?.remove()
 
     if (isMonthGridView(calendar.view.type)) {
@@ -246,7 +234,6 @@ function displayNewEventPlaceholder(
         })
         return
     }
-
     calendar.addEvent({
         id: DRAFT_EVENT_ID,
         title: 'New Event',
@@ -259,33 +246,39 @@ function displayNewEventPlaceholder(
 }
 
 function renderCalendarEventContent(eventInfo: EventDisplayInfo) {
-    if (!isMonthGridView(eventInfo.view.type)) return true
-
-    const fallbackTime = !eventInfo.event.allDay && eventInfo.isStart && eventInfo.event.start
-        ? formatEventTime(eventInfo.event.start)
-        : ''
-    const timeText = eventInfo.timeText || fallbackTime
+    if (!isMonthGridView(eventInfo.view.type)) return true //use fullcalendar built in event rendering if not custom view
+    let fallbackTime = ""
+    if (!eventInfo.event.allDay && eventInfo.isStart && eventInfo.event.start) {
+        const hour = eventInfo.event.start.getHours()
+        const minute = eventInfo.event.start.getMinutes()
+        const minuteText = minute ? `:${String(minute).padStart(2, '0')}` : ''
+        if (hour % 12 === 0)
+            fallbackTime = `${12}${minuteText}${hour < 12 ? 'a' : 'p'}`
+        else
+            fallbackTime = `${hour % 12}${minuteText}${hour < 12 ? 'm' : 'p'}`
+    } else {
+        fallbackTime = ""
+    }
+    const timeText = eventInfo.timeText || fallbackTime //calculate time
 
     return <>
         {timeText && <div className='calendar-event-time'>{timeText}</div>}
         <div className={`calendar-event-title ${eventInfo.event.allDay ? '' : 'calendar-event-title-timed'}`}>
             {eventInfo.event.title || '\u00a0'}
         </div>
-    </>
+    </> //return and render event customly
 }
 
-function hideUnmeasuredMonth(monthInfo: SingleMonthInfo) {
-    return monthInfo.multiMonthColumns === 0
-        ? 'year-month-measuring'
-        : ''
-}
+function hideUnmeasuredMonth(monthInfo: SingleMonthInfo) { // called from callback for each individual month panel in the multi month year view
+    return monthInfo.multiMonthColumns === 0 ? 'year-month-measuring' : ''
+} //hide the temporary pre measurement version of the year view so no bug, flash briefly wrong number of columns
 
 function getMinutesAfterMidnight(dateTime: string) {
     const time = Temporal.PlainTime.from(dateTime)
     return time.hour * 60 + time.minute
 }
 
-function createDateList(startDate: string, daysBetween?: number) {
+function createDateList(startDate: string, daysBetween?: number) { //create list of dates to diplay in dropdown. TODO: replace with combobox grid view
     const selected = Temporal.PlainDate.from(startDate)
     const dates: string[] = []
 
