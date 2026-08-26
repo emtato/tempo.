@@ -533,7 +533,7 @@ export default function CalendarApp() {
         scrollPositionToRestore.current = null //discard pre recenter position
     }
 
-    function recenterMonthRange( //function that orchestrates recentering, calling the save
+    function recenterMonthRange( //function that orchestrates recentering, applyMonthviewportpos to restore
         activeMonth: Date,
         viewportPosition: MonthViewportPosition = {
             date: activeMonth,
@@ -690,7 +690,7 @@ export default function CalendarApp() {
         setDeletePopup(false)
     }
 
-    useEffect(() => {
+    useEffect(() => { //keyboard shortcuts
         function handleKeyDown(event: KeyboardEvent) {
             if (event.key !== 'Escape' && event.key !== 'n') return
 
@@ -913,7 +913,7 @@ export default function CalendarApp() {
 
                             toolbarTitle?.classList.add('calendar-toolbar-title')
                             const toolbar = toolbarTitle?.parentElement?.parentElement
-                            toolbar?.classList.add('calendar-toolbar') //find and modify css of toolbartitle
+                            toolbar?.classList.add('calendar-toolbar') //find and add css to toolbartitle, return to use
                             return toolbarTitle
                         }
 
@@ -932,8 +932,7 @@ export default function CalendarApp() {
                         recenterMonthRange(today)
 
                         const updateTitle = () => {
-                            const {activeMonthDate, scrollerBounds} =
-                                updateMonthViewportPresentation(scroller)
+                            const {activeMonthDate, scrollerBounds} = updateMonthViewportPresentation(scroller)
 
                             if (activeMonthDate) {
                                 const [year, monthIndex] = activeMonthDate.split('-').map(Number)
@@ -948,7 +947,7 @@ export default function CalendarApp() {
                                 recenterMonthRange(activeMonth, viewportPosition)
                             }
                         }
-
+                        //scroll to month, used by initial loading alignemnt, snap to month,
                         const scrollToMonth = (date: Date, behavior: ScrollBehavior = 'auto') => {
                             const month = toLocalDateString(date).slice(0, 7)
 
@@ -1020,13 +1019,12 @@ export default function CalendarApp() {
                         }
 
                         let alignmentFrame = 0
-                        const alignCurrentMonth = () => {
+                        const alignCurrentMonth = () => { //align scroll position upon initialload
                             window.cancelAnimationFrame(alignmentFrame)
                             let framesRemaining = 12
 
                             const align = () => {
-                                if (lastCalendarViewRef.current &&
-                                    lastCalendarViewRef.current !== SCROLLING_MONTH_VIEW) return
+                                if (lastCalendarViewRef.current && lastCalendarViewRef.current !== SCROLLING_MONTH_VIEW) return
                                 const rowsAreSized = scrollToMonth(today)
 
                                 if (rowsAreSized) {
@@ -1065,8 +1063,7 @@ export default function CalendarApp() {
                     }}
                     datesSet={(dateInfo) => {
                         setCalendarView(dateInfo.view.type)
-                        const enteredScrollingMonth = dateInfo.view.type === SCROLLING_MONTH_VIEW &&
-                            lastCalendarViewRef.current !== SCROLLING_MONTH_VIEW
+                        const enteredScrollingMonth = dateInfo.view.type === SCROLLING_MONTH_VIEW && lastCalendarViewRef.current !== SCROLLING_MONTH_VIEW
                         lastCalendarViewRef.current = dateInfo.view.type
 
                         if (rangeRecenterInProgressRef.current) {
@@ -1081,8 +1078,7 @@ export default function CalendarApp() {
                                         const scroller = findMonthScroller(calendarMainRef.current)
                                         const pendingAnchor = scrollPositionToRestore.current
                                         if (scroller && pendingAnchor) {
-                                            applyMonthViewportPosition
-                                            (scroller, pendingAnchor.anchor)
+                                            applyMonthViewportPosition(scroller, pendingAnchor.anchor)
                                         }
                                         cancelRangeAnchorRestore()
                                         rangeRecenterInProgressRef.current = false
