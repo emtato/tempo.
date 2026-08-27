@@ -196,12 +196,11 @@ export default function Popup({
         if (localX <= boundary || localX >= rect.width - boundary || localY <= boundary * 2 || localY >= rect.height - boundary) {
             return true
         } else {
-            return false
-            //false if we arent near the popup boundaries. no dragging for you
+            return false  //false if we arent near the popup boundaries. no dragging for you
         }
     }
 
-    function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) { //start drag
+    function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) { //start drag popup
         const target = event.target as HTMLElement
 
         if (target.closest('input, textarea, select, button')) { //enable drag only on white space of popup
@@ -375,9 +374,9 @@ export default function Popup({
     async function saveEvent() {
         //already given variables:
         //title is title
-        //startTime is event starting time
-        //endTime is  event ending time
-        //selectedStartDate is event start date
+        //startTime is event starting time, in minutes since midnight
+        //endTime is  event ending time, in minutes since midnight
+        //selectedStartDate is event start date, in ISO format ("2023-01-01")
         //selectedEndDate is event end date
         //allDay is event alldayness :3
         //description is description

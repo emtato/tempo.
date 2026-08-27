@@ -11,9 +11,7 @@
  * Keep HTTP objects (`request`, `response`) out of this file. Also avoid raw
  * MongoDB calls and Gemini SDK calls; those belong behind their own adapters.
  */
-import {
-    CalendarEvent, SaveCalendarEventInput,
-} from "../domain/calendar-event.js";
+import {CalendarEvent, SaveCalendarEventInput,} from "../domain/calendar-event.js";
 import {eventStorage} from "../repositories/event.storage.js";
 import {randomUUID} from "node:crypto";
 
@@ -55,18 +53,6 @@ async function deleteEvent(id: string, userId: any): Promise<void> {
 //                          helper functions
 // ————————————————————————————————————————————————————————————————————
 
-function convertTime(Date: string, Time: number): string {
-    const H = Math.floor(Time / 60);
-    const M = Time % 60;
-    const S = "00"
-    const HFormatted = H.toString().padStart(2, "0");
-    const MFormatted = M.toString().padStart(2, "0");
-
-    const TimeFormatted = HFormatted + ":" + MFormatted + ":" + S;
-    const combinedStart = Date + "T" + TimeFormatted;
-    return combinedStart;
-}
-
 function ConvertToCalendarEvent(input: SaveCalendarEventInput, userId: string): CalendarEvent {
     const combinedStart = convertTime(input.startDate, input.startTime);
     const combinedEnd = convertTime(input.endDate, input.endTime);
@@ -86,6 +72,17 @@ function ConvertToCalendarEvent(input: SaveCalendarEventInput, userId: string): 
     };
     return event;
 
+}
+
+function convertTime(Date: string, Time: number): string {
+    const H = Math.floor(Time / 60);
+    const M = Time % 60;
+    const S = "00"
+    const HFormatted = H.toString().padStart(2, "0");
+    const MFormatted = M.toString().padStart(2, "0");
+
+    const TimeFormatted = HFormatted + ":" + MFormatted + ":" + S;
+    return Date + "T" + TimeFormatted;
 }
 
 //add one day to an all day event. Fullcalendar interprets exclusive end dates, while we display inclusive. re add 1 day to db so reinterpretation of the range is correct

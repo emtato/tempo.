@@ -1,4 +1,4 @@
-import FullCalendar from '@fullcalendar/react'
+import FullCalendar, {EventDropInfo} from '@fullcalendar/react'
 import type {
     CalendarApi, CalendarOptions, CalendarRef, DateClickInfo, DateSelectInfo, EventClickInfo, EventDisplayInfo,
     EventSourceFuncInfo, SingleMonthInfo,
@@ -14,11 +14,14 @@ import multiMonthPlugin from '@fullcalendar/react/multimonth'
 import {Temporal} from 'temporal-polyfill'
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import Popup, {MinimizedBar, Sidebar} from './EventDetails'
-import {DEMO_USER_ID, deleteCalendarEvent, getCalendarEvents, restoreEvent} from './api/eventsAPI'
+import {DEMO_USER_ID, deleteCalendarEvent, getCalendarEvents, restoreEvent, saveCalendarEvent} from './api/eventsAPI'
 import type {TransitionEvent} from 'react'
 import AuthOverlay from "./components/AuthOverlay";
 import {authClient} from "./api/auth-client";
 import {UserMenu} from "./components/user/UserMenu";
+import {Simulate} from "react-dom/test-utils";
+import drop = Simulate.drop;
+import {SaveCalendarEventInput} from "../../backend/src/domain/calendar-event";
 
 // ----------------------------------------------------
 // Types
@@ -890,6 +893,42 @@ export default function CalendarApp() {
         setLocation(selectInfo.event.extendedProps.location)
     }
 
+    async function handleEventDrop(dropInfo: EventDropInfo) {
+        //console.log("handleEventDrop", dropInfo)
+        const eventId = dropInfo.event.id
+        const secondDiff = dropInfo.delta.milliseconds / 1000
+        const dayDiff = dropInfo.delta.days
+
+        //   console.log("handleEventDrop", newRange)
+        const rangeStart = dropInfo.event.start;
+        const rangeEnd = dropInfo.event.end;
+        if (rangeStart && rangeEnd) { // true unless error since every event has a start and end, and thus dropped position also does
+            console.log("handleEventDrop", rangeStart, rangeEnd)
+            const startDate = toLocalDateString(rangeStart)
+            const endDate = toLocalDateString(rangeEnd)
+            const startTime = rangeStart.getHours() * 60 + rangeStart.getMinutes()
+            const endTime = rangeEnd.getHours() * 60 + rangeEnd.getMinutes()
+            const updatedEvent: SaveCalendarEventInput = {
+                id: eventId,
+                title: dropInfo.event.title,
+                startDate: startDate,
+                endDate: endDate,
+                startTime: startTime,
+                endTime: endTime,
+                allDay: dropInfo.event.allDay,
+                extendedProps: {
+                    location: dropInfo.event.extendedProps.location,
+                    description: dropInfo.event.extendedProps.description,
+                    guests: dropInfo.event.extendedProps.guests,
+                }
+            }
+            await saveCalendarEvent(updatedEvent, userId)
+            refreshCalendar(); //refresh calendar events
+        } else { //panic
+
+        }
+    }
+
 // ------------------------------------------------
 // render
 // ------------------------------------------------
@@ -907,6 +946,7 @@ export default function CalendarApp() {
                     views={CALENDAR_VIEWS}
                     buttons={calendarButtons}
                     toolbarElements={calendarToolbarElements}
+                    eventDrop={handleEventDrop}
                     viewDidMount={(viewInfo) => {
                         const findToolbarTitle = () => {
                             const toolbarTitle = calendarMainRef.current?.querySelector<HTMLElement>('[role="heading"]')
