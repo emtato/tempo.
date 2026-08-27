@@ -834,12 +834,6 @@ h2 {
 
 /* Date controls */
 
-/*.date-range {*/
-/*    display: flex;*/
-/*    align-items: center;*/
-/*    gap: 0.57em;*/
-/*}*/
-
 /*.date-input {*/
 /*    width: 7.5em;*/
 /*    border: none;*/
@@ -872,6 +866,12 @@ h2 {
 }
 
 /* Time controls */
+
+.time-range {
+    display: flex;
+    align-items: center;
+    gap: 0.57em;
+}
 
 .time-select-with-edit {
     display: inline-flex;
@@ -975,10 +975,15 @@ h2 {
     cursor: pointer;
 }
 
+.date-picker-month-title {
+    position: absolute;
+    width: 100%;
+}
+
 .datepicker-dropdown {
     position: absolute;
     top: 100%;
-    left: -200%;
+    left: -50%;
     z-index: 1500;
     max-height: 14.29em;
     overflow-y: auto;
@@ -994,12 +999,17 @@ h2 {
 }
 
 .date-option-button {
-    width: 1em;
-    height: 1em;
+    width: 2em;
+    height: 2em;
     background: transparent;
     border: none;
     font: inherit;
     white-space: nowrap;
+}
+
+.date-option-button:hover {
+    background: var(--colour-hover-grey);
+    cursor: pointer;
 }
 
 /* Calendar colour (type of event) */

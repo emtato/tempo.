@@ -8,6 +8,7 @@ import type {DeletedEvent} from "./Calendarapp";
 import type {authClient} from "./api/auth-client";
 import icons from "./resources/icons/";
 import DatePicker from "./components/DatePicker";
+import toLocalDateString from "./Calendarapp"
 // ----------------------------------------------------
 // Configuration
 // ----------------------------------------------------
@@ -316,7 +317,28 @@ export default function Popup({
 
     }
 
-    function datePicked(date: Date) {
+    function datePicked(date: Date, startOrEnd: "start" | "end") {
+//Sat Aug 01 2026 00:00:00 GMT-0400 (Eastern Daylight Time)
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const day = String(date.getDate()).padStart(2, '0')
+
+        const dateString = `${year}-${month}-${day}`
+        if (startOrEnd == "start") {
+            setSelectedStartDate(dateString)
+            const nextEndDate = dateString >= selectedEndDate
+                //only update end date if start date is after end date
+                ? dateString
+                : selectedEndDate
+
+            setSelectedEndDate(nextEndDate)
+            if (dateString == nextEndDate && endTime < startTime) {
+                setEndTime(startTime)
+            }
+        } else {
+            setSelectedEndDate(dateString)
+        }
+        console.log(selectedStartDate)
 
     }
 
@@ -550,7 +572,7 @@ export default function Popup({
                             <div className="row-content">
                                 <div className="date-range">
                                     <DatePicker date={pickerDate} onChange={datePicked}
-                                                ariaLabel={"first"}></DatePicker>
+                                                ariaLabel={"start"}></DatePicker>
                                     <select
                                         className="date-input" value={selectedStartDate}
                                         onChange={(event) => {
@@ -598,7 +620,7 @@ export default function Popup({
                                         ))}
                                     </select>
                                 </div>
-                                <div className="date-range">
+                                <div className="time-range">
                                     <span className="time-select-with-edit">
                                         <TimeComboBox
                                             value={startTime}
