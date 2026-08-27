@@ -834,27 +834,28 @@ h2 {
 
 /* Date controls */
 
-.date-range {
-    display: flex;
-    align-items: center;
-    gap: 0.57em;
-}
+/*.date-range {*/
+/*    display: flex;*/
+/*    align-items: center;*/
+/*    gap: 0.57em;*/
+/*}*/
 
-.date-input {
-    width: 7.5em;
-    border: none;
-    background: transparent;
-    color: inherit;
-    font: inherit;
-}
+/*.date-input {*/
+/*    width: 7.5em;*/
+/*    border: none;*/
+/*    background: transparent;*/
+/*    color: inherit;*/
+/*    font: inherit;*/
+/*}*/
 
-.end-date-input {
-    margin-right: 0.71em;
-}
+/*.end-date-input {*/
+/*    margin-right: 0.71em;*/
+/*}*/
 
 .all-day-option {
     display: inline-flex;
     align-items: center;
+    margin-left: 5em;
     gap: 0.57em;
     white-space: nowrap;
     color: var(--colour-text);
@@ -961,12 +962,37 @@ h2 {
 }
 
 .DatePicker {
+    position: relative;
 
+}
+
+.date-picker-trigger-button {
+    width: 10.5em;
+    margin-left: -0.5em;
+    border: none;
+    background: transparent;
+    font: inherit;
+    cursor: pointer;
 }
 
 .datepicker-dropdown {
-
+    position: absolute;
+    top: 100%;
+    left: -200%;
+    z-index: 1500;
+    max-height: 14.29em;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    padding: 0.43em;
+    border: 0.07em solid var(--colour-border);
+    border-radius: 0.57em;
+    background: var(--colour-off-white);
+    box-shadow: 0 0.57em 1.71em rgba(60, 64, 67, 0.18);
+    scrollbar-color: var(--colour-scrollbar) transparent;
+    scrollbar-width: thin;
 }
+
 .date-option-button {
     width: 1em;
     height: 1em;
@@ -1151,10 +1177,6 @@ h2 {
         max-height: 720px;
         font-size: max(13px, min(3.5vw, 16px));
         border-radius: 16px;
-    }
-
-    .all-day-option {
-        transform: translate(-104%, +105%) !important;
     }
 
     .time-combobox-dropdown {

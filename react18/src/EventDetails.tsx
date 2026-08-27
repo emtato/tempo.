@@ -7,6 +7,7 @@ import TimeComboBox from "./components/TimeComboBox";
 import type {DeletedEvent} from "./Calendarapp";
 import type {authClient} from "./api/auth-client";
 import icons from "./resources/icons/";
+import DatePicker from "./components/DatePicker";
 // ----------------------------------------------------
 // Configuration
 // ----------------------------------------------------
@@ -154,6 +155,9 @@ export default function Popup({
     if (endTimeOptions[endTimeOptions.length - 1] !== MINUTES_PER_DAY) {
         endTimeOptions.push(MINUTES_PER_DAY)
     }
+    const plainDate = Temporal.PlainDate.from(selectedStartDate)
+
+    const pickerDate = new Date(plainDate.year, plainDate.month - 1, plainDate.day)
 
     // ------------------------------------------------
     // Popup positioning
@@ -296,12 +300,12 @@ export default function Popup({
             handleEndTimeChange(nextEndTime);
         }
         //date
-        if (startDate.split(":")[0] == "00"){
+        if (startDate.split(":")[0] == "00") {
 
         }
-            if (startDate !== "") {
-                setSelectedStartDate(startDate);
-            }
+        if (startDate !== "") {
+            setSelectedStartDate(startDate);
+        }
         if (endDate !== "") {
             setSelectedEndDate(endDate);
         }
@@ -311,6 +315,11 @@ export default function Popup({
         }
 
     }
+
+    function datePicked(date: Date) {
+
+    }
+
 
 // ------------------------------------------------
 // Time handlers
@@ -540,6 +549,8 @@ export default function Popup({
                             />
                             <div className="row-content">
                                 <div className="date-range">
+                                    <DatePicker date={pickerDate} onChange={datePicked}
+                                                ariaLabel={"first"}></DatePicker>
                                     <select
                                         className="date-input" value={selectedStartDate}
                                         onChange={(event) => {
@@ -586,16 +597,6 @@ export default function Popup({
                                             </option>
                                         ))}
                                     </select>
-                                    <label className="all-day-option">
-                                        <input
-                                            type="checkbox"
-                                            checked={allday}
-                                            onChange={(event) => {
-                                                setAllday(event.target.checked);
-                                            }}
-                                        />
-                                        <span>All day</span>
-                                    </label>
                                 </div>
                                 <div className="date-range">
                                     <span className="time-select-with-edit">
@@ -634,10 +635,18 @@ export default function Popup({
                                             onClick={() => {
                                                 setEndTimeModified(true)
                                                 setEndTime((currentTime) => toggleAmPm(currentTime))
-                                            }}
-                                        >
+                                            }}>
                                             {getAmPm(endTime)}
-                                        </button>
+                                        </button><label className="all-day-option">
+                                        <input
+                                            type="checkbox"
+                                            checked={allday}
+                                            onChange={(event) => {
+                                                setAllday(event.target.checked);
+                                            }}
+                                        />
+                                        <span>All day</span>
+                                    </label>
                                     </span>
                                 </div>
                                 <div className="secondary-text">Does not repeat</div>
@@ -843,9 +852,10 @@ export function Sidebar({isOpen, onClose, setAuthOpen, onUserMenuOpen, user}: Si
                         <li>Click a date or time slot to create an event.</li>
                         <li>Drag across dates or times to create a longer event.</li>
                         <li>
-                            Add a time/time range to the title, such as <q>Lunch from 1-2:15pm</q> to set it automatically.
+                            Add a time/time range to the title, such as <q>Lunch from 1-2:15pm</q> to set it
+                            automatically.
                         </li>
-                         <li>
+                        <li>
                             Date ranges, such as <q>now - sept 3</q> also work.
                         </li>
                         <li>

@@ -2,19 +2,20 @@ import {useEffect, useState} from "react";
 import {useRef} from "react";
 
 interface DatePickerProps {
-    value: Date; //selected Date
+    date: Date; //selected Date
     onChange: (date: Date) => void; //callback send info back to eventdetails.tsx
     ariaLabel: string; //start date picker or end date picker
-    startMonth: Date //default month to display (according to which month the event popup was triggered by
 }
 
+function format(date: Date) {
+    return date.toLocaleDateString(undefined, {day: "numeric"})
+}
 
 export default function DatePicker(props: DatePickerProps) {
     const [isOpen, setIsOpen] = useState(false);
-    const [options, setOptions] = useState<Date[]>([]);
-    generateTimeOptions(props.startMonth);
+    const options = generateDateOptions(props.date)
 
-    function generateTimeOptions(dateOfMonth: Date) {
+    function generateDateOptions(dateOfMonth: Date) {
         const firstOfMonth = new Date(dateOfMonth.getFullYear(), dateOfMonth.getMonth(), 1);
         const daysBefore = firstOfMonth.getDay(); //get day of week to start generating options from the closest sunday before first of month
         const gridStartDate = new Date(firstOfMonth.setDate(firstOfMonth.getDate() - daysBefore));
@@ -26,7 +27,11 @@ export default function DatePicker(props: DatePickerProps) {
         for (let currentDate = gridStartDate; currentDate <= gridEndDate; currentDate.setDate(currentDate.getDate() + 1)) {
             dateOptions.push(new Date(currentDate));
         }
-        setOptions(dateOptions);
+        return dateOptions;
+    }
+
+    function openDropdown() {
+        setIsOpen(true)
     }
 
     function dateSelected(date: Date) {
@@ -40,15 +45,21 @@ export default function DatePicker(props: DatePickerProps) {
                           setIsOpen(false);
                       }
                   }}>
+            <button type="button" className="date-picker-trigger-button"
+                    onClick={openDropdown}>{props.date.toLocaleDateString(undefined, {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+            })}</button>
             {isOpen && (
                 <span className="datepicker-dropdown">
-                {options.map((time) => (
+                {options.map((date) => (
                     <button
                         type="button"
                         className="time-option-button"
-                        onClick={() => dateSelected(time)}
+                        onClick={() => dateSelected(date)}
                     >
-                    </button>
+                        {format(date)}</button>
                 ))}
             </span>)}
         </span>
