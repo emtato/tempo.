@@ -379,11 +379,11 @@ export default function Popup({
             nextEndDate = Temporal.PlainDate.from(selectedEndDate).add({days: 1}).toString()
             setSelectedEndDate(nextEndDate)
         }
-        setEndTime(nextEndTime);
-
         if (nextEndTime < startTime && selectedStartDate == nextEndDate) {
-            setStartTime(nextEndTime)
+            nextEndTime = toggleAmPm(nextEndTime)
+
         }
+        setEndTime(nextEndTime);
     }
 
 // ------------------------------------------------

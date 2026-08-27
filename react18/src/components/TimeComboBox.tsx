@@ -136,12 +136,26 @@ export default function TimeComboBox(props: TimeComboBoxProps) {
         props.onChange(time);
     }
 
+    function submitDraftText() { //if user leaves/press enter after
+        const incompleteTimeMatch = draftText.match(/^([1-9]|0[1-9]|1[0-2]):?([0-5])?$/);
+
+        if (!incompleteTimeMatch) return;
+
+        const hour = incompleteTimeMatch[1];
+        const minuteTens = incompleteTimeMatch[2];
+        const completedTime = `${hour}:${minuteTens ?? "0"}0`;
+
+        setDraftText(completedTime);
+        props.onChange(turntoMinutes(completedTime, props.ampm));
+    }
+
     return (
         <span className="time-combobox-wrapper"
               onBlur={(event) => {
                   const nextFocusedElement = event.relatedTarget;
 
                   if (!event.currentTarget.contains(nextFocusedElement as Node)) {
+                      submitDraftText();
                       setIsOpen(false);
                   }
               }}>
@@ -172,12 +186,16 @@ export default function TimeComboBox(props: TimeComboBoxProps) {
 
                        props.onChange(turntoMinutes(nextDraft, props.ampm));
                    }}
-                   onClick={() => setIsOpen(true)}
+                   onClick={() => {
+                       setIsOpen(true)
+                       setDraftText("")
+                   }}
 
-                   onKeyDown={(event) => { // close dropdown when enter press
+                   onKeyDown={(event) => { //confirm typed time and close dropdown when enter press
                        if (event.key === "Enter" && isOpen) {
                            event.preventDefault(); //prevent it from saving event (default action from enter)
                            event.stopPropagation();
+                           submitDraftText();
                            setIsOpen(false);
                        }
                    }}
@@ -186,18 +204,20 @@ export default function TimeComboBox(props: TimeComboBoxProps) {
             />
             {isOpen && (
                 <span className="time-combobox-dropdown">
-                {props.options.map((time) => ( //map start/endtime options into butotns
-                    <button
-                        type="button"
-                        className="time-option-button"
-                        ref={time === 9 * 60 ? targetTimeRef : undefined}
-                        onClick={() => timeSelected(time)}
-                        key={time}
-                    >
-                        {formatTime(time, true)/*displayed value on button}*/}
-                    </button>
-                ))}
-            </span>)}
-        </span>
-    );
+                   {props.options.map((time) => ( //map start/endtime options into butotns
+                       <button
+                           type="button"
+                           className="time-option-button"
+                           ref={time === 9 * 60 ? targetTimeRef : undefined}
+                           onClick={() => timeSelected(time)}
+                           key={time}
+                       >
+                           {formatTime(time, true)/*displayed value on button}*/}
+                       </button>
+                   ))}
+            </span>)
+            }
+</span>
+    )
+        ;
 }

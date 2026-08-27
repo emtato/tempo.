@@ -871,7 +871,12 @@ export default function CalendarApp() {
 
         if (!selectInfo.event.allDay) {
             const startTime = Temporal.PlainTime.from(selectInfo.event.startStr).toString()
-            const endTime = Temporal.PlainTime.from(selectInfo.event.endStr).toString()
+            let endTime = ""
+            if (selectInfo.event.endStr == "") { //if endtime == startTime, selectinfo.event.endStr becomes "".
+                endTime = startTime
+            } else {
+                endTime = Temporal.PlainTime.from(selectInfo.event.endStr).toString()
+            }
             startTimeMinutes = getMinutesAfterMidnight(startTime)
             endTimeMinutes = getMinutesAfterMidnight(endTime)
         } else {
