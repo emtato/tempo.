@@ -111,7 +111,7 @@
 
 .auth-subtitle {
     max-width: 30rem;
-    margin: 1.4rem 0 0;
+    margin: 1.4rem 0 1rem;
     color: color-mix(in srgb, var(--colour-off-white) 82%, var(--colour-purple-light));
     font-size: clamp(1.05rem, 1.5vw, 1.3rem);
     font-weight: 500;

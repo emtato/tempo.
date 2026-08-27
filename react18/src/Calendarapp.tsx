@@ -1216,8 +1216,7 @@ export default function CalendarApp() {
                     <div className="auth-content">
                         <p className="auth-eyebrow">Keep pace with your day.</p>
                         <h2 className="auth-title">Welcome to Tempo:</h2>
-                        <p className="auth-subtitle">A smarter calendar, simplifying scheduling to keep your day in
-                            rhythm. </p>
+                        <p className="auth-subtitle">A smarter calendar to keep your day in rhythm. </p>
                         <span className="auth-text">Please </span>
                         <button
                             onClick={openLogin}
