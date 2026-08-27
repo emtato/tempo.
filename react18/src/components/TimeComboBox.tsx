@@ -1,6 +1,14 @@
 import {useEffect, useState} from "react";
 import {useRef} from "react";
 
+interface TimeComboBoxProps {
+    value: number; //confirmed time in minutes after midnight
+    options: number[];
+    onChange: (minutes: number) => void; //sends confirmed val backto eventdets. (onChange is the passed function "handleStartTimeChange")
+    ariaLabel: string; //starttime or endtime field
+    ampm: "AM" | "PM";
+}
+
 function formatTime(minutesAfterMidnight: number, addAMPM: boolean): string {
     const hour24 = Math.floor(minutesAfterMidnight / 60);
     const minutes = minutesAfterMidnight % 60;
@@ -11,14 +19,6 @@ function formatTime(minutesAfterMidnight: number, addAMPM: boolean): string {
     )
     if (!addAMPM) return `${hour12}:${String(minutes).padStart(2, "0")}`;
     return `${hour12}:${String(minutes).padStart(2, "0")} ${AMPM}`;
-}
-
-interface TimeComboBoxProps {
-    value: number; //confirmed time in minutes after midnight
-    options: number[];
-    onChange: (minutes: number) => void; //sends confirmed val backto eventdets. (onChange is the passed function "handleStartTimeChange")
-    ariaLabel: string; //starttime or endtime field
-    ampm: "AM" | "PM";
 }
 
 function turntoMinutes(time: string, AMPM: string) {
@@ -71,23 +71,13 @@ function filterTimeInput(previous: string, next: string): string {
     if (hourIsComplete) {
         const hour = Number(hourText);
 
-        if (hour < 1 || hour > 12) {
-            return previous;
-        }
+        if (hour < 1 || hour > 12) return previous;
     }
-
-    if (
-        minuteText !== undefined &&
-        minuteText.length >= 1 &&
-        Number(minuteText[0]) > 5
-    ) {
+    if (minuteText !== undefined && minuteText.length >= 1 && Number(minuteText[0]) > 5) {
         return previous;
     }
 
-    const isCompleteHour =
-        /^[2-9]$/.test(hourText) ||
-        /^0[1-9]$/.test(hourText) ||
-        /^1[0-2]$/.test(hourText);
+    const isCompleteHour = /^[2-9]$/.test(hourText) || /^0[1-9]$/.test(hourText) || /^1[0-2]$/.test(hourText);
 
     if (!isDeletingColon && minuteText === undefined && isCompleteHour) {
         return `${hourText}:`; //add colon automatically

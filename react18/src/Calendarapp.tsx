@@ -894,16 +894,10 @@ export default function CalendarApp() {
     }
 
     async function handleEventDrop(dropInfo: EventDropInfo) {
-        //console.log("handleEventDrop", dropInfo)
         const eventId = dropInfo.event.id
-        const secondDiff = dropInfo.delta.milliseconds / 1000
-        const dayDiff = dropInfo.delta.days
-
-        //   console.log("handleEventDrop", newRange)
         const rangeStart = dropInfo.event.start;
         const rangeEnd = dropInfo.event.end;
         if (rangeStart && rangeEnd) { // true unless error since every event has a start and end, and thus dropped position also does
-            console.log("handleEventDrop", rangeStart, rangeEnd)
             const startDate = toLocalDateString(rangeStart)
             const endDate = toLocalDateString(rangeEnd)
             const startTime = rangeStart.getHours() * 60 + rangeStart.getMinutes()
@@ -925,7 +919,7 @@ export default function CalendarApp() {
             await saveCalendarEvent(updatedEvent, userId)
             refreshCalendar(); //refresh calendar events
         } else { //panic
-
+            //TODO popup error?
         }
     }
 

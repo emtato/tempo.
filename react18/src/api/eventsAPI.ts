@@ -54,14 +54,13 @@ export async function saveCalendarEvent(event: SaveCalendarEventInput, userId: s
     //run time/location extractor again in case the user saved it before timer ran out
     const extractionResult = simpleTimeLocationExtractor(event.title, false, false)
     const returnTitle = extractionResult.returnTitle;
-        const startTime = extractionResult.startTime;
-        const endTime = extractionResult.endTime;
-        const startDate = extractionResult.startDate;
-        const endDate = extractionResult.endDate;
-        const location = extractionResult.location;
-        const requiresConfirmation = extractionResult.requiresConfirmation;
-        const rangeInProgress = extractionResult.rangeInProgress;
-        console.log("savng", event)
+    const startTime = extractionResult.startTime;
+    const endTime = extractionResult.endTime;
+    const startDate = extractionResult.startDate;
+    const endDate = extractionResult.endDate;
+    const location = extractionResult.location;
+    const requiresConfirmation = extractionResult.requiresConfirmation;
+    const rangeInProgress = extractionResult.rangeInProgress;
     event.title = returnTitle
     if (startTime != "") {
         const [hours, minutes] = startTime.split(":").map(Number);

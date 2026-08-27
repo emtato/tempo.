@@ -322,6 +322,7 @@ h2 {
     align-items: center;
     justify-content: space-between;
 }
+
 .sidebar-icon {
     width: 1.4em;
     height: 1.4em;
@@ -329,12 +330,14 @@ h2 {
     object-fit: contain;
     justify-self: center;
 }
-.sidebar-arrow{
+
+.sidebar-arrow {
     width: 1.6em;
     height: 1.6em;
     display: block;
     object-fit: contain;
 }
+
 .sidebar-toolbar-left,
 .sidebar-toolbar-right {
     display: flex;
@@ -620,6 +623,7 @@ h2 {
     0 0.3em 0.70em rgba(60, 64, 67, 0.1);
     color: var(--colour-text);
 }
+
 .popup-field-icon {
     width: 2em;
     height: 2em;
@@ -628,6 +632,7 @@ h2 {
     justify-self: center;
     margin-left: -1.65em;
 }
+
 .popup-delete-button-icon {
     object-fit: contain;
     justify-self: center;
@@ -637,6 +642,7 @@ h2 {
     height: 2em;
     grid-area: 1 / 1; /* occupy same area*/
 }
+
 .popup-delete-button-icon--default {
     opacity: 1;
 }
@@ -952,6 +958,22 @@ h2 {
     width: 2.71em;
     border: none;
     font-size: 1em;
+}
+
+.DatePicker {
+
+}
+
+.datepicker-dropdown {
+
+}
+.date-option-button {
+    width: 1em;
+    height: 1em;
+    background: transparent;
+    border: none;
+    font: inherit;
+    white-space: nowrap;
 }
 
 /* Calendar colour (type of event) */
