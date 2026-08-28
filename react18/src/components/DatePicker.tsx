@@ -4,6 +4,7 @@ interface DatePickerProps {
     date: Date; //selected Date
     onChange: (date: Date, startOrEnd: "start" | "end") => void; //callback send info back to eventdetails.tsx
     ariaLabel: "start" | "end"; //start date picker or end date picker
+    disableDatesBefore?: Date; //for end date selection. dates before start date should not be selectable
 }
 
 function format(date: Date, setting: "title" | "day") {
@@ -32,6 +33,7 @@ export default function DatePicker(props: DatePickerProps) {
     }
 
     function openDropdown() {
+        setDisplayedMonth(new Date(props.date.getFullYear(), props.date.getMonth(), 1)) //reinitialize displayed month to new prop value
         setIsOpen(true)
     }
 
@@ -50,7 +52,6 @@ export default function DatePicker(props: DatePickerProps) {
         setDisplayedMonth(newDate);
     }
 
-    //TODO: if arrow clicked, date prop should change to reflect the new month's first date
     return (<span className="DatePicker"
                   onBlur={(event) => { //lose focus
                       if (!event.currentTarget.contains(event.relatedTarget as Node)) {
@@ -81,6 +82,7 @@ export default function DatePicker(props: DatePickerProps) {
                         <button
                             type="button"
                             key={date.getTime()}
+                            disabled={props.disableDatesBefore !== undefined && date < props.disableDatesBefore} //disable dates for end selector
                             className="date-option-button"
                             onClick={() => dateSelected(date)}>
                             {format(date, "day")}</button>

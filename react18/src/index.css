@@ -967,11 +967,11 @@ h2 {
 }
 
 .date-picker-trigger-button {
-    width: 10.5em;
+    width: 10.35em;
     margin-left: -0.3em;
     border: none;
     background: transparent;
-    font: inherit;
+    font-size: 1.05em;
     cursor: pointer;
     text-align: left;
 }
@@ -1006,11 +1006,18 @@ h2 {
     border: none;
     font: inherit;
     white-space: nowrap;
+    border-radius: 0.4em;
 }
 
-.date-option-button:hover {
+.date-option-button:not(:disabled):hover {
     background: var(--colour-hover-grey);
     cursor: pointer;
+}
+
+.date-option-button:disabled {
+    color: var(--colour-neutral-grey);
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .date-picker-header {

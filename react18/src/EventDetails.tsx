@@ -578,7 +578,7 @@ export default function Popup({
                                                 ariaLabel={"start"}></DatePicker>
                                     <span className="range-separator">-</span>
                                     <DatePicker date={pickerEndDate} onChange={datePicked}
-                                                ariaLabel={"end"}></DatePicker>
+                                                ariaLabel={"end"} disableDatesBefore={pickerStartDate}></DatePicker>
                                 </div>
                                 <div className="time-range">
                                     <span className="time-select-with-edit">
