@@ -931,7 +931,13 @@ export default function CalendarApp() {
 // ------------------------------------------------
 // render
 // ------------------------------------------------
-
+    if (isPending) {
+        return <div className="app loading-container">
+            <div className="calendar-loading"> Loading..</div>
+            <Sidebar isOpen={isSidebar} onClose={closeSidebar} setAuthOpen={openLogin}
+                     onUserMenuOpen={openUserMenu} user={session?.user}/>
+        </div>
+    }
     return (
         <div className={isSidebar ? 'app' : 'app app-sidebar-collapsed'}
              onTransitionEnd={handleSidebarTransitionEnd}>

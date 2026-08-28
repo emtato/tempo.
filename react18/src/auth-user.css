@@ -321,11 +321,32 @@
     top: 1%;
     right: 1%;
     font-size: 1.2rem;
-     width: 2rem;
+    width: 2rem;
     height: 2rem;
 }
-.user-profile-icon-edit{
+
+.user-profile-icon-edit {
     width: 60px;
     height: 60px;
     flex: 0 0 60px;
+}
+
+/* auth loading replacing main ui*/
+.calendar-loading {
+    box-sizing: border-box;
+    min-width: 0;
+    padding-left: var(--calendar-frame-size);
+    padding-bottom: var(--calendar-frame-size);
+    display: grid;
+    place-items: center;
+    font-size: 20px;
+    color: var(--colour-off-white);
+}
+
+.loading-container {
+    display: grid;
+    grid-template-columns: 3fr 1fr;
+    --calendar-frame-size: 0.37em;
+    min-height: 100%;
+    column-gap: var(--calendar-frame-size);
 }
