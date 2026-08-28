@@ -38,7 +38,7 @@ export default function AuthOverlay({onClose, onRevealComplete, origin, loginCho
         event.preventDefault();
         try {
             const data = new FormData(event.currentTarget);
-            const username = String(data.get("username"));
+            const username = String(data.get("username")).trimEnd();
             const password = String(data.get("password"));
             const email = username + "@gmail.com" // temp email for auth to be happy. verification/passsword reset later TODO
 
