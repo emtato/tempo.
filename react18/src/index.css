@@ -607,13 +607,12 @@ h2 {
     user-select: none;
     -webkit-user-select: none;
     /*
-     * 14px at the current 1490 x 927 reference viewport.
-     * The smaller viewport axis controls the scale so the popup keeps its
-     * proportions. The 10.9px floor is ~78% of the reference size.
+     * 13.3px at the current 1491 x 889 reference viewport.
+     * This is the minimum scale; larger viewports continue scaling upward.
      */
-    font-size: max(10.9px, min(0.9vw, 1.5vh));
-    width: 32em;
-    height: 36.5em;
+    font-size: max(13.5px, min(1vw, 1.5vh));
+    width: max(32em, 426.75px);
+    height: max(36.5em, 486.75px);
     box-sizing: border-box;
     padding: 2em 2em 1.7em;
     border: 0.15em solid var(--colour-border);
