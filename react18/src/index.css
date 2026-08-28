@@ -1,10 +1,15 @@
 /* ====================================================
    Stylesheet map
    1. Global foundations
+      - Shared colour/font tokens and document-level defaults
    2. Application layout
+      - Desktop grid, toolbar, and calendar view controls
    3. Sidebar
+      - Expanded and minimized sidebar presentation
    4. Calendar
+      - FullCalendar shell, event density, and month labels
    5. Event popup
+      - Event editor structure and individual form controls
       - Shell and content
       - Header controls
       - Form rows and text fields
@@ -12,6 +17,11 @@
       - Time controls
       - Calendar picker
       - Action buttons
+   6. Responsive dimension rules
+      - Calendar-container controls at 55em and below
+      - Viewport toolbar switch at 1000px and below
+      - Compact calendar events at 800px and below
+      - Phone layout at 700px and below
    ==================================================== */
 
 /* ____________________________________________________
@@ -93,55 +103,6 @@ h2 {
     display: none; /* remove scrollbar */
 }
 
-@container (max-width: 55em) {
-    .calendar-toolbar {
-        display: grid !important;
-        grid-template-columns: max-content minmax(0, 1fr) max-content;
-        align-items: center;
-        gap: clamp(4px, 1.5cqi, 10px);
-        padding: clamp(8px, 2cqi, 14px) clamp(6px, 2cqi, 24px) !important;
-        flex-wrap: nowrap !important;
-    }
-
-    .calendar-toolbar > * {
-        min-width: 0;
-    }
-
-    .calendar-toolbar > :first-child {
-        gap: clamp(4px, 1.5cqi, 12px);
-        justify-self: start;
-    }
-
-    .calendar-toolbar > :nth-child(2) {
-        overflow: hidden;
-        justify-content: center;
-    }
-
-    .calendar-toolbar > :last-child {
-        justify-self: end;
-    }
-
-    .calendar-nav-arrow {
-        width: clamp(38px, 6cqi, 42px);
-        height: clamp(40px, 6cqi, 42px);
-        padding: clamp(8px, 1.4cqi, 10px) !important;
-    }
-
-    .calendar-today-button {
-        min-height: clamp(40px, 6cqi, 42px);
-        padding-inline: clamp(12px, 2.8cqi, 20px) !important;
-        font-size: clamp(13.5px, 2cqi, 14px) !important;
-    }
-
-    .calendar-toolbar-title {
-        overflow: hidden;
-        font-size: clamp(1.2rem, 3.5cqi, 1.4rem);
-        white-space: nowrap;
-        text-overflow: ellipsis;
-    }
-
-}
-
 .calendar-view-select-wrapper {
     display: none;
     position: relative;
@@ -187,30 +148,6 @@ h2 {
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
     border: 0;
-}
-
-@media (max-width: 1000px) {
-    .calendar-toolbar [role='tablist']:has(> .calendar-wide-view-button) {
-        display: none !important;
-
-    }
-
-    .calendar-view-select-wrapper {
-        display: inline-flex;
-    }
-}
-
-@container (max-width: 55em) {
-    .calendar-view-select {
-        width: clamp(76px, 12cqi, 83px);
-        height: clamp(40px, 6cqi, 42px);
-        padding-inline: clamp(12px, 2cqi, 14px) clamp(22px, 3.5cqi, 24px);
-        font-size: clamp(13.5px, 2cqi, 14px);
-    }
-
-    .calendar-view-select-wrapper::after {
-        right: clamp(10px, 1.7cqi, 12px);
-    }
 }
 
 .calendar-month-weeks [role='gridcell'] > div:first-child > div:first-child {
@@ -547,25 +484,6 @@ h2 {
 /* Hide the continuous month view until FullCalendar finishes sizing its rows. */
 .scrolling-month-measuring {
     visibility: hidden;
-}
-
-@media (max-width: 800px) {
-    .calendar-month-weeks [role="row"] {
-        min-height: 100px;
-    }
-
-    .calendar-event-time {
-        display: none;
-    }
-
-    .calendar-event-title {
-        padding-inline: var(--calendar-event-inline-padding);
-    }
-
-    .calendar-main [role="button"]:has(.calendar-event-title) {
-        padding-inline: 0 !important;
-    }
-
 }
 
 .month-boundary-label {
@@ -1147,8 +1065,102 @@ h2 {
     background: color-mix(in srgb, var(--colour-purple-vibrant) 86%, white);
 }
 
-/* phone layout section*/
+/* ____________________________________________________
+    rules for different screen dimensions
+   ____________________________________________________ */
 
+/* Calendar-container controls: compress toolbar spacing and controls when the
+   calendar column becomes narrow */
+@container (max-width: 55em) {
+    .calendar-toolbar {
+        display: grid !important;
+        grid-template-columns: max-content minmax(0, 1fr) max-content;
+        align-items: center;
+        gap: clamp(4px, 1.5cqi, 10px);
+        padding: clamp(8px, 2cqi, 14px) clamp(6px, 2cqi, 24px) !important;
+        flex-wrap: nowrap !important;
+    }
+
+    .calendar-toolbar > * {
+        min-width: 0;
+    }
+
+    .calendar-toolbar > :first-child {
+        gap: clamp(4px, 1.5cqi, 12px);
+        justify-self: start;
+    }
+
+    .calendar-toolbar > :nth-child(2) {
+        overflow: hidden;
+        justify-content: center;
+    }
+
+    .calendar-toolbar > :last-child {
+        justify-self: end;
+    }
+
+    .calendar-nav-arrow {
+        width: clamp(38px, 6cqi, 42px);
+        height: clamp(40px, 6cqi, 42px);
+        padding: clamp(8px, 1.4cqi, 10px) !important;
+    }
+
+    .calendar-today-button {
+        min-height: clamp(40px, 6cqi, 42px);
+        padding-inline: clamp(12px, 2.8cqi, 20px) !important;
+        font-size: clamp(13.5px, 2cqi, 14px) !important;
+    }
+
+    .calendar-toolbar-title {
+        overflow: hidden;
+        font-size: clamp(1.2rem, 3.5cqi, 1.4rem);
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    .calendar-view-select {
+        width: clamp(76px, 12cqi, 83px);
+        height: clamp(40px, 6cqi, 42px);
+        padding-inline: clamp(12px, 2cqi, 14px) clamp(22px, 3.5cqi, 24px);
+        font-size: clamp(13.5px, 2cqi, 14px);
+    }
+
+    .calendar-view-select-wrapper::after {
+        right: clamp(10px, 1.7cqi, 12px);
+    }
+}
+
+/* toolbar switch: replace wide tab list with the compact view selector before the overall application becomes phone-sized. */
+@media (max-width: 1000px) {
+    .calendar-toolbar [role='tablist']:has(> .calendar-wide-view-button) {
+        display: none !important;
+    }
+
+    .calendar-view-select-wrapper {
+        display: inline-flex;
+    }
+}
+
+/* removes time + taller day cells for mobile ui */
+@media (max-width: 800px) {
+    .calendar-month-weeks [role="row"] {
+        min-height: 100px;
+    }
+
+    .calendar-event-time {
+        display: none;
+    }
+
+    .calendar-event-title {
+        padding-inline: var(--calendar-event-inline-padding);
+    }
+
+    .calendar-main [role="button"]:has(.calendar-event-title) {
+        padding-inline: 0 !important;
+    }
+}
+
+/* mobile layout overall sidebar positioning */
 @media (max-width: 700px) {
     .app {
         height: 100dvh;
