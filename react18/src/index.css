@@ -1188,7 +1188,7 @@ h2 {
 
     .sidebar-icon-list {
         flex: 1;
-        flex-direction: row;
+        flex-direction: row-reverse;
         justify-content: space-evenly;
         gap: 0;
         margin-top: 0;

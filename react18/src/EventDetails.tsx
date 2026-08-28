@@ -899,16 +899,6 @@ export function MinimizedBar({isOpen, onClose, setAuthOpen, onUserMenuOpen, user
                         aria-hidden="true"
                     />
                 </button>
-
-                <button className="sidebar-icon-button" type="button" aria-label="Notifications">
-                    <img
-                        className="sidebar-icon"
-                        src={icons["./sidebar-notifications.png"]}
-                        alt=""
-                        aria-hidden="true"
-                    />
-                </button>
-
                 <button className="sidebar-icon-button" type="button" aria-label="Add">
                     <img
                         className="sidebar-icon"
@@ -917,7 +907,14 @@ export function MinimizedBar({isOpen, onClose, setAuthOpen, onUserMenuOpen, user
                         aria-hidden="true"
                     />
                 </button>
-
+                <button className="sidebar-icon-button" type="button" aria-label="Notifications">
+                    <img
+                        className="sidebar-icon"
+                        src={icons["./sidebar-notifications.png"]}
+                        alt=""
+                        aria-hidden="true"
+                    />
+                </button>
                 <button className="sidebar-icon-button" type="button" aria-label="Search">
                     <img
                         className="sidebar-icon"
