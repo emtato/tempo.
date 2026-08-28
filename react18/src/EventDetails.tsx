@@ -156,9 +156,11 @@ export default function Popup({
     if (endTimeOptions[endTimeOptions.length - 1] !== MINUTES_PER_DAY) {
         endTimeOptions.push(MINUTES_PER_DAY)
     }
+    //convert selected start/end dates to Date format for date picker combobox
     const plainDate = Temporal.PlainDate.from(selectedStartDate)
-
-    const pickerDate = new Date(plainDate.year, plainDate.month - 1, plainDate.day)
+    const plainEndDate = Temporal.PlainDate.from(selectedEndDate)
+    const pickerStartDate = new Date(plainDate.year, plainDate.month - 1, plainDate.day)
+    const pickerEndDate = new Date(plainEndDate.year, plainEndDate.month - 1, plainEndDate.day)
 
     // ------------------------------------------------
     // Popup positioning
@@ -337,9 +339,10 @@ export default function Popup({
             }
         } else {
             setSelectedEndDate(dateString)
+            if (selectedStartDate == dateString && endTime < startTime) {
+                setEndTime(startTime)
+            }
         }
-        console.log(selectedStartDate)
-
     }
 
 
@@ -571,32 +574,11 @@ export default function Popup({
                             />
                             <div className="row-content">
                                 <div className="date-range">
-                                    <DatePicker date={pickerDate} onChange={datePicked}
+                                    <DatePicker date={pickerStartDate} onChange={datePicked}
                                                 ariaLabel={"start"}></DatePicker>
                                     <span className="range-separator">-</span>
-                                    <select
-                                        className="date-input end-date-input"
-                                        value={selectedEndDate}
-                                        onChange={(event) => {
-                                            const nextEndDate = event.target.value
-                                            setSelectedEndDate(nextEndDate)
-                                            if (nextEndDate < selectedStartDate) {
-                                                setSelectedStartDate(event.target.value)
-                                            }
-                                            const nextStartDate = nextEndDate < selectedStartDate //use updated start date info
-                                                ? nextEndDate
-                                                : selectedStartDate;
-                                            if (nextStartDate == nextEndDate && endTime < startTime) {
-                                                setEndTime(startTime)
-                                            }
-                                        }
-                                        }>
-                                        {dateList.map((date) => (
-                                            <option key={date} value={date}>
-                                                {date}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <DatePicker date={pickerEndDate} onChange={datePicked}
+                                                ariaLabel={"end"}></DatePicker>
                                 </div>
                                 <div className="time-range">
                                     <span className="time-select-with-edit">

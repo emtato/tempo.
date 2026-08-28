@@ -968,11 +968,12 @@ h2 {
 
 .date-picker-trigger-button {
     width: 10.5em;
-    margin-left: -0.5em;
+    margin-left: -0.3em;
     border: none;
     background: transparent;
     font: inherit;
     cursor: pointer;
+    text-align: left;
 }
 
 .date-picker-month-title {
