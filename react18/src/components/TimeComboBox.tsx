@@ -157,6 +157,7 @@ export default function TimeComboBox(props: TimeComboBoxProps) {
                   if (!event.currentTarget.contains(nextFocusedElement as Node)) {
                       submitDraftText();
                       setIsOpen(false);
+                      setDraftText(formatTime(props.value, false))
                   }
               }}>
             <input className="time-combobox-input"
@@ -195,6 +196,7 @@ export default function TimeComboBox(props: TimeComboBoxProps) {
                        if (event.key === "Enter" && isOpen) {
                            event.preventDefault(); //prevent it from saving event (default action from enter)
                            event.stopPropagation();
+                           setDraftText(formatTime(props.value, false))
                            submitDraftText();
                            setIsOpen(false);
                        }

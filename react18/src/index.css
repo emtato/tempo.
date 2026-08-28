@@ -976,7 +976,7 @@ h2 {
 }
 
 .date-picker-month-title {
-    position: absolute;
+    grid-column: 2;
     width: 100%;
 }
 
@@ -1009,6 +1009,30 @@ h2 {
 
 .date-option-button:hover {
     background: var(--colour-hover-grey);
+    cursor: pointer;
+}
+
+.date-picker-header {
+    grid-column: 1 / -1; /*span all columnsof parent*/
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+}
+
+.date-picker-navigation {
+    grid-column: 3;
+    justify-self: end;
+    display: flex;
+}
+
+.date-picker-navigation-button {
+    border: none;
+    width: 1em;
+    height: 1em;
+    display: flex;
+    background: transparent;
+    align-items: center;
+    font-size: 1.5em;
     cursor: pointer;
 }
 

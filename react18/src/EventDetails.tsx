@@ -573,28 +573,6 @@ export default function Popup({
                                 <div className="date-range">
                                     <DatePicker date={pickerDate} onChange={datePicked}
                                                 ariaLabel={"start"}></DatePicker>
-                                    <select
-                                        className="date-input" value={selectedStartDate}
-                                        onChange={(event) => {
-                                            const nextStartDate = event.target.value
-                                            const nextEndDate = nextStartDate >= selectedEndDate
-                                                //only update end date if start date is after end date
-                                                ? nextStartDate
-                                                : selectedEndDate
-
-                                            setSelectedStartDate(nextStartDate)
-                                            setSelectedEndDate(nextEndDate)
-                                            if (nextStartDate == nextEndDate && endTime < startTime) {
-                                                setEndTime(startTime)
-                                            }
-                                        }}
-                                    >
-                                        {dateList.map((date) => (
-                                            <option key={date} value={date}>
-                                                {date}
-                                            </option>
-                                        ))}
-                                    </select>
                                     <span className="range-separator">-</span>
                                     <select
                                         className="date-input end-date-input"

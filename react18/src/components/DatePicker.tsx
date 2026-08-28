@@ -1,5 +1,4 @@
-import {useEffect, useState} from "react";
-import {useRef} from "react";
+import {useState} from "react";
 
 interface DatePickerProps {
     date: Date; //selected Date
@@ -14,7 +13,8 @@ function format(date: Date, setting: "title" | "day") {
 
 export default function DatePicker(props: DatePickerProps) {
     const [isOpen, setIsOpen] = useState(false);
-    const options = generateDateOptions(props.date)
+    const [displayedMonth, setDisplayedMonth] = useState(() => new Date(props.date.getFullYear(), props.date.getMonth(), 1))
+    const options = generateDateOptions(displayedMonth)
 
     function generateDateOptions(dateOfMonth: Date) {
         const firstOfMonth = new Date(dateOfMonth.getFullYear(), dateOfMonth.getMonth(), 1);
@@ -40,6 +40,16 @@ export default function DatePicker(props: DatePickerProps) {
         props.onChange(date, props.ariaLabel);
     }
 
+    function nextMonth() {
+        const newDate = new Date(displayedMonth.getFullYear(), displayedMonth.getMonth() + 1, 1);
+        setDisplayedMonth(newDate);
+    }
+
+    function previousMonth() {
+        const newDate = new Date(displayedMonth.getFullYear(), displayedMonth.getMonth() - 1, 1);
+        setDisplayedMonth(newDate);
+    }
+
     //TODO: if arrow clicked, date prop should change to reflect the new month's first date
     return (<span className="DatePicker"
                   onBlur={(event) => { //lose focus
@@ -55,10 +65,22 @@ export default function DatePicker(props: DatePickerProps) {
             })}</button>
             {isOpen && (
                 <span className="datepicker-dropdown">
-                    <span className="date-picker-month-title">{format(props.date, "title")}</span>
+                    <div className="date-picker-header">
+                        <span className="date-picker-month-title">
+                            {format(displayedMonth, "title")}
+                        </span>
+
+                        <div className="date-picker-navigation">
+                            <button className="date-picker-navigation-button" type="button"
+                                    aria-label="Previous month" onClick={previousMonth}>‹</button>
+                            <button className="date-picker-navigation-button" type="button"
+                                    aria-label="Next month" onClick={nextMonth}>›</button>
+                        </div>
+                    </div>
                     {options.map((date) => (
                         <button
                             type="button"
+                            key={date.getTime()}
                             className="date-option-button"
                             onClick={() => dateSelected(date)}>
                             {format(date, "day")}</button>
