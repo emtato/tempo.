@@ -1190,7 +1190,7 @@ h2 {
 
     .app-sidebar {
         z-index: 1000;
-
+        height: 80vh;
     }
 
     .sidebar-expand-button {
