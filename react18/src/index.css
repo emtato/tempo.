@@ -831,24 +831,10 @@ h2 {
     font-size: 0.86em;
 }
 
-/* Date controls */
-
-/*.date-input {*/
-/*    width: 7.5em;*/
-/*    border: none;*/
-/*    background: transparent;*/
-/*    color: inherit;*/
-/*    font: inherit;*/
-/*}*/
-
-/*.end-date-input {*/
-/*    margin-right: 0.71em;*/
-/*}*/
-
 .all-day-option {
     display: inline-flex;
     align-items: center;
-    margin-left: 5em;
+    margin-left: 1.5em;
     gap: 0.57em;
     white-space: nowrap;
     color: var(--colour-text);
@@ -869,7 +855,13 @@ h2 {
 .time-range {
     display: flex;
     align-items: center;
-    gap: 0.57em;
+    gap: 0.5em;
+}
+
+.range-separator {
+    color: var(--colour-neutral-grey);
+    margin-left: 0.2em;
+    margin-right: 0.2em;
 }
 
 .time-select-with-edit {
@@ -960,14 +952,23 @@ h2 {
     font-size: 1em;
 }
 
+/* date options */
+.date-range {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    margin-inline-start: 0.2em;
+}
+
 .DatePicker {
     position: relative;
 
 }
 
 .date-picker-trigger-button {
-    width: 10.35em;
-    margin-left: -0.3em;
+    width: max-content;
+    margin-left: 0;
+    padding: 0;
     border: none;
     background: transparent;
     font-size: 1.05em;
