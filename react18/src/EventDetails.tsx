@@ -534,8 +534,6 @@ export default function Popup({
                     onPointerUp={handlePointerUp}
                     style={{'--event-color': selectedCalendar.color} as CSSProperties}
                 >
-                    <button className="icon-button drag-button" type="button" aria-label="Move popup">☰</button>
-                    {/* TODO */}
                     <button
                         className="icon-button close-button"
                         type="button"

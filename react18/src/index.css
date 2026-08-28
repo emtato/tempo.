@@ -834,7 +834,7 @@ h2 {
 .all-day-option {
     display: inline-flex;
     align-items: center;
-    margin-left: 1.5em;
+    margin-left: min(6vw, 1.5em);
     gap: 0.57em;
     white-space: nowrap;
     color: var(--colour-text);
@@ -1196,7 +1196,7 @@ h2 {
 
     .popup-positioner {
         position: fixed !important; /* override inline style  for mobile */
-        top: 50% !important;
+        top: 42.4% !important;
         left: 50% !important;
         transform: translate(-50%, -60%) !important;
     }
@@ -1214,11 +1214,35 @@ h2 {
     .event-popup {
         position: relative;
         width: 90vw;
-        height: 64vh;
+        height: 58vh;
         max-width: 480px;
         max-height: 720px;
         font-size: max(13px, min(3.5vw, 16px));
         border-radius: 16px;
+        padding-inline-start: 1em;
+    }
+
+    .event-content {
+        padding-inline-start: 0.5em;
+    }
+
+    .range-separator {
+        margin-inline: 0;
+    }
+
+    .form-row {
+        grid-template-columns: 1.8em minmax(0, 1fr) auto;
+        column-gap: 0;
+        min-height: 2.8em;
+    }
+
+    .popup-field-icon {
+        width: 1.75em;
+        height: 1.75em;
+    }
+
+    .popup-actions {
+        margin-top: 1em;
     }
 
     .time-combobox-dropdown {
