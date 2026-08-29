@@ -870,6 +870,14 @@ h2 {
     font-size: 1em;
 }
 
+.repeat-button {
+    color: var(--colour-neutral-grey);
+    font-size: 0.86em;
+    border: transparent;
+    background: transparent;
+    cursor: pointer;
+}
+
 /* date options */
 .date-range {
     display: flex;

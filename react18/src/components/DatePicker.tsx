@@ -37,9 +37,9 @@ export default function DatePicker(props: DatePickerProps) {
         setIsOpen(true)
     }
 
-    function dateSelected(date: Date) {
+    function dateSelected(newDate: Date) {
         setIsOpen(false);
-        props.onChange(date, props.ariaLabel);
+        props.onChange(newDate, props.ariaLabel);
     }
 
     function nextMonth() {

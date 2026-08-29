@@ -9,6 +9,7 @@ import type {authClient} from "./api/auth-client";
 import icons from "./resources/icons/";
 import DatePicker from "./components/DatePicker";
 import toLocalDateString from "./Calendarapp"
+import RepetitionPicker from "./components/RepetitionPicker";
 // ----------------------------------------------------
 // Configuration
 // ----------------------------------------------------
@@ -572,7 +573,7 @@ export default function Popup({
                             />
                             <div className="row-content">
                                 <div className="date-range">
-                                    <DatePicker date={pickerStartDate} onChange={datePicked}
+                                        <DatePicker date={pickerStartDate} onChange={datePicked}
                                                 ariaLabel={"start"}></DatePicker>
                                     <span className="range-separator">-</span>
                                     <DatePicker date={pickerEndDate} onChange={datePicked}
@@ -629,7 +630,7 @@ export default function Popup({
                                     </label>
                                     </span>
                                 </div>
-                                <div className="secondary-text">Does not repeat</div>
+                                <RepetitionPicker></RepetitionPicker>
                             </div>
                         </div>
                         <div className="form-row">

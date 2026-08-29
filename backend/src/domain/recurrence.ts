@@ -9,7 +9,6 @@ export interface recurrence {
 
     endDate?: string; //YYYY-MM-DD. all repetitions of this event end at or before this date
 }
-
 /*
 examples:
 • every other day:
@@ -27,3 +26,4 @@ examples:
     frequency: monthly
     days: 2
  */
+
