@@ -1,6 +1,6 @@
 export interface recurrence {
     frequency: string; //daily, every week, every month, every year
-    weekday?: number[] //if the recurrence depends on weekday instead of days, pick which weekday
+    dayOfWeek?: number[] //if the recurrence depends on weekday instead of days, pick which weekday
 
     days?: number[] //nº of days after the beginning of the frequency unit: 0 days would be sunday for week, 1st of the month etc.
     skipInterval?: number; //if monthly: (monthly + skipinterval 1: every other month)  if weekly + weekday + skipint 2, every 3rd {weekday}
@@ -9,6 +9,7 @@ export interface recurrence {
 
     endDate?: string; //YYYY-MM-DD. all repetitions of this event end at or before this date
 }
+//dayOfWeek, days, position and months are lists because of rules like "last weekday of the month" -> would need to contain all week days and determine which one is the last
 /*
 examples:
 • every other day:
@@ -16,11 +17,11 @@ examples:
     skipInterval: 1
 • every other thursday:
     frequency: weekly
-    weekday: thursday
+    dayOfWeek: thursday
     skipInterval: 1
 •  the last thursday of every month
     frequency: monthly
-    weekday: thursday
+    dayOfWeek: thursday
     position: -1
 • every 3rd of the month
     frequency: monthly

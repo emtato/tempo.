@@ -980,7 +980,6 @@ h2 {
     max-height: 14.29em;
     overflow-y: auto;
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
     padding: 0.43em;
     border: 0.07em solid var(--colour-border);
     border-radius: 0.57em;
@@ -988,6 +987,21 @@ h2 {
     box-shadow: 0 0.57em 1.71em rgba(60, 64, 67, 0.18);
     scrollbar-color: var(--colour-scrollbar) transparent;
     scrollbar-width: thin;
+}
+
+.recurrence-option-button {
+    width: 15em;
+    height: 2em;
+    background: transparent;
+    border: none;
+    font: inherit;
+    white-space: nowrap;
+    border-radius: 0.4em;
+}
+
+.recurrence-option-button:hover {
+    background: var(--colour-hover-grey);
+    cursor: pointer;
 }
 
 /* Calendar colour (type of event) */

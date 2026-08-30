@@ -10,6 +10,7 @@ import icons from "./resources/icons/";
 import DatePicker from "./components/DatePicker";
 import toLocalDateString from "./Calendarapp"
 import RepetitionPicker from "./components/RepetitionPicker";
+import {recurrence} from "../../backend/src/domain/recurrence";
 // ----------------------------------------------------
 // Configuration
 // ----------------------------------------------------
@@ -346,6 +347,31 @@ export default function Popup({
         }
     }
 
+    function repetitionPicked(option: recurrence) {
+
+    }
+
+    function generateRepetitionOptions(): recurrence[] {
+        let options: recurrence[] = []
+        const everyDayRecurrence: recurrence = {frequency: "daily"}
+        options.push(everyDayRecurrence)
+        let repeatEveryWeek = "" //every monday
+        const date = parseInt(selectedStartDate.split("-")[2]) - 1
+        let repeatEveryMonth: recurrence = {frequency: "month", days: [date]} //every xth of the month
+        options.push(repeatEveryMonth)
+
+        let weekRules = "" //every weekday/weekend (depending on its week day / weekend status)
+        let everyOtherWeek = ""
+
+        if (selectedStartDate != selectedEndDate) {
+            // multiple day event, repetition option should include both days
+            //"every monday to wednesday"/ "every 3rd-7th of the month"
+        } else {
+
+        }
+        //TODO: find day of the week
+        return options
+    }
 
 // ------------------------------------------------
 // Time handlers
@@ -573,7 +599,7 @@ export default function Popup({
                             />
                             <div className="row-content">
                                 <div className="date-range">
-                                        <DatePicker date={pickerStartDate} onChange={datePicked}
+                                    <DatePicker date={pickerStartDate} onChange={datePicked}
                                                 ariaLabel={"start"}></DatePicker>
                                     <span className="range-separator">-</span>
                                     <DatePicker date={pickerEndDate} onChange={datePicked}
@@ -630,7 +656,8 @@ export default function Popup({
                                     </label>
                                     </span>
                                 </div>
-                                <RepetitionPicker></RepetitionPicker>
+                                <RepetitionPicker onChange={repetitionPicked}
+                                                  options={generateRepetitionOptions()}></RepetitionPicker>
                             </div>
                         </div>
                         <div className="form-row">
