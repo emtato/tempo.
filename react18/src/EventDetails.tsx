@@ -11,6 +11,7 @@ import DatePicker from "./components/DatePicker";
 import toLocalDateString from "./Calendarapp"
 import RepetitionPicker from "./components/RepetitionPicker";
 import {recurrence} from "../../backend/src/domain/recurrence";
+import {formatOptionsToText} from "./components/RepetitionPicker"
 // ----------------------------------------------------
 // Configuration
 // ----------------------------------------------------
@@ -127,6 +128,7 @@ export default function Popup({
     const [endTimeModified, setEndTimeModified] = useState(endTimeMod)
     const [locationModified, setLocationModified] = useState(false)
     const [guests, setGuests] = useState(gsts)
+    const [repetitionString, setRepetitionString] = useState("Does not repeat")
     const dragStart = useRef<{
         pointerX: number
         pointerY: number
@@ -348,7 +350,8 @@ export default function Popup({
     }
 
     function repetitionPicked(option: recurrence) {
-
+        console.log("repetitionPicked", option)
+        setRepetitionString("Repeats " + formatOptionsToText(option))
     }
 
     function generateRepetitionOptions(): recurrence[] {
@@ -673,7 +676,8 @@ export default function Popup({
                                     </span>
                                 </div>
                                 <RepetitionPicker onChange={repetitionPicked}
-                                                  options={generateRepetitionOptions()}></RepetitionPicker>
+                                                  options={generateRepetitionOptions()}
+                                                  repetitionString={repetitionString}></RepetitionPicker>
                             </div>
                         </div>
                         <div className="form-row">

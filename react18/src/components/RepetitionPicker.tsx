@@ -5,10 +5,7 @@ interface RepetitionPickerProps {
     onChange: (repetition: recurrence) => void; //callback send recurrence info back
     recurrenceSelection?: recurrence //will be modified by the popup and sent back when done to onchange
     options: recurrence[]; //options for simple repetition (based on date clicked, intelligently offer suggestions)
-}
-
-function optionSelected(option: string) {
-
+    repetitionString: string;
 }
 
 const dayToWeekDayMap: Record<number, string> = {
@@ -32,10 +29,9 @@ function treatWeekRep(dayOfWeek: number[], other: boolean) {
         }
     }
     return other ? 'Every other ' + dayToWeekDayMap[(dayOfWeek)[0]] : 'Every ' + dayToWeekDayMap[(dayOfWeek)[0]]
-
 }
 
-function formatOptionsToText(option: recurrence): string {
+export function formatOptionsToText(option: recurrence): string {
     if (option.frequency == "daily" && Object.keys(option).length === 1) { //only frequency field exists: every day
         return "Daily"
     }
@@ -68,6 +64,10 @@ function formatOptionsToText(option: recurrence): string {
 export default function RepetitionPicker(props: RepetitionPickerProps) {
     const [isOpen, setIsOpen] = useState(false)
 
+    function optionSelected(option: recurrence) {
+        props.onChange(option)
+        setIsOpen(false)
+    }
 
     return (<span className="DatePicker"
                   onBlur={(event) => { //lose focus
@@ -77,7 +77,7 @@ export default function RepetitionPicker(props: RepetitionPickerProps) {
                   }}>
             <button className="repeat-button" type="button" onClick={() => {
                 setIsOpen(true)
-            }}>Does not repeat</button>
+            }}>{props.repetitionString}</button>
             {/* TODO: connect repetition status of the event to what displas on the button*/}
 
             {isOpen && (<span className="repetition-menu">
@@ -87,7 +87,7 @@ export default function RepetitionPicker(props: RepetitionPickerProps) {
                         type="button"
                         //key={date.getTime()}
                         className="recurrence-option-button"
-                        onClick={() => props.onChange(option)}>
+                        onClick={() => optionSelected(option)}>
                         {formatOptionsToText(option)}</button>
                 ))}
             </span>)}
