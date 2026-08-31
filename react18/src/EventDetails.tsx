@@ -355,12 +355,15 @@ export default function Popup({
         let options: recurrence[] = []
         const everyDayRecurrence: recurrence = {frequency: "daily"}
         options.push(everyDayRecurrence)
+        const everyOtherDay: recurrence = {frequency: "daily", skipInterval: 1}
+        options.push(everyOtherDay)
 
         const dateObj = Temporal.PlainDate.from(selectedStartDate)
         const weekday = dateObj.dayOfWeek //1-7
         let repeatEveryWeek: recurrence = {frequency: "weekly", dayOfWeek: [weekday]} //ex: every monday
         let everyOtherWeek: recurrence = {frequency: "weekly", dayOfWeek: [weekday], skipInterval: 1}
         options.push(repeatEveryWeek)
+        options.push(everyOtherWeek)
 
         let weekRules: recurrence //every weekday/weekend (depending on its week day / weekend status)
         if (weekday < 6) { //weekday
@@ -374,6 +377,8 @@ export default function Popup({
         let repeatEveryMonth: recurrence = {frequency: "monthly", days: [date]} //every xth of the month
         options.push(repeatEveryMonth)
 
+        const repeatEveryYear: recurrence = {frequency: "yearly", days: [date]}
+        options.push(repeatEveryYear)
 
         // if (selectedStartDate != selectedEndDate) {
         //     // multiple day event, repetition option should include both days

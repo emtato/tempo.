@@ -21,25 +21,36 @@ const dayToWeekDayMap: Record<number, string> = {
     7: "Sunday",
 }
 
+function treatWeekRep(dayOfWeek: number[], other: boolean) {
+    if (dayOfWeek.length > 1) {
+        if (dayOfWeek.includes(1) && dayOfWeek.includes(2) && dayOfWeek.includes(3) && dayOfWeek.includes(4) && dayOfWeek.includes(5)) {
+            return other ? 'Every other week\'s weekdays' : 'Every weekday'
+        } else if (dayOfWeek.includes(6) && dayOfWeek.includes(7)) {
+            return other ? 'Every other week\'s weekends' : 'Every weekend'
+        } else {
+            return other ? 'Every other ' + dayOfWeek.map(day => dayToWeekDayMap[day]).join(', ') : 'Every ' + dayOfWeek.map(day => dayToWeekDayMap[day]).join(', ')
+        }
+    }
+    return other ? 'Every other ' + dayToWeekDayMap[(dayOfWeek)[0]] : 'Every ' + dayToWeekDayMap[(dayOfWeek)[0]]
+
+}
+
 function formatOptionsToText(option: recurrence): string {
-    if (option.frequency == "daily" && Object.keys(option).length === 1) { //only frequency field exists
+    if (option.frequency == "daily" && Object.keys(option).length === 1) { //only frequency field exists: every day
         return "Daily"
     }
-    if (option.frequency == 'weekly' && option.dayOfWeek != undefined && Object.keys(option).length == 2) { //must be repeat wekly
-        if(option.dayOfWeek.length > 1){
-            if(option.dayOfWeek.includes(1) && option.dayOfWeek.includes(2) && option.dayOfWeek.includes(3) && option.dayOfWeek.includes(4) && option.dayOfWeek.includes(5)){
-                return 'Every weekday'
-            }
-            else if(option.dayOfWeek.includes(6) && option.dayOfWeek.includes(7)){
-                return 'Every weekend'
-            }
-            else{
-                return 'Every ' + option.dayOfWeek.map(day => dayToWeekDayMap[day]).join(', ')
-            }
-        }
-        return 'Every ' + dayToWeekDayMap[(option.dayOfWeek)[0]] + ''
+    if (option.frequency == 'daily' && option.skipInterval != undefined && Object.keys(option).length == 2) { //every x days
+        if (option.skipInterval == 1) return "Every other day"
+        return "Every " + option.skipInterval + " days"
     }
-    if (option.frequency == "monthly" && option.days != undefined && Object.keys(option).length == 2) {
+    if (option.frequency == 'weekly' && option.dayOfWeek != undefined && Object.keys(option).length == 2) { //every week, weekend, weekday
+        return treatWeekRep(option.dayOfWeek, false)
+    }
+    if (option.frequency == 'weekly' && option.dayOfWeek != undefined && option.skipInterval != undefined && Object.keys(option).length == 3) { //every other week
+        if (option.skipInterval == 1) return treatWeekRep(option.dayOfWeek, true)
+        //TODO? (maybe)
+    }
+    if (option.frequency == "monthly" && option.days != undefined && Object.keys(option).length == 2) { //every month on the xth day
         const stringpart = "Every month on the "
         //assuming simple rules only for repetition picker, thus days list will only have 1 element.
         //unlike complex rules from ai parsed repetitions, which might have "every 2nd, 5th and 20th of the month"
@@ -48,8 +59,9 @@ function formatOptionsToText(option: recurrence): string {
         if (option.days[0] == 2) return stringpart + "3rd"
         else return stringpart + (option.days[0] + 1) + "th"
     }
-
-
+    if (option.frequency == "yearly" && option.days != undefined && Object.keys(option).length == 2) {
+        return "Every Year"
+    }
     return ""
 }
 
