@@ -11,11 +11,35 @@ function optionSelected(option: string) {
 
 }
 
+const dayToWeekDayMap: Record<number, string> = {
+    1: "Monday",
+    2: "Tuesday",
+    3: "Wednesday",
+    4: "Thursday",
+    5: "Friday",
+    6: "Saturday",
+    7: "Sunday",
+}
+
 function formatOptionsToText(option: recurrence): string {
     if (option.frequency == "daily" && Object.keys(option).length === 1) { //only frequency field exists
         return "Daily"
     }
-    if (option.frequency == "month" && option.days != undefined && Object.keys(option).length == 2) {
+    if (option.frequency == 'weekly' && option.dayOfWeek != undefined && Object.keys(option).length == 2) { //must be repeat wekly
+        if(option.dayOfWeek.length > 1){
+            if(option.dayOfWeek.includes(1) && option.dayOfWeek.includes(2) && option.dayOfWeek.includes(3) && option.dayOfWeek.includes(4) && option.dayOfWeek.includes(5)){
+                return 'Every weekday'
+            }
+            else if(option.dayOfWeek.includes(6) && option.dayOfWeek.includes(7)){
+                return 'Every weekend'
+            }
+            else{
+                return 'Every ' + option.dayOfWeek.map(day => dayToWeekDayMap[day]).join(', ')
+            }
+        }
+        return 'Every ' + dayToWeekDayMap[(option.dayOfWeek)[0]] + ''
+    }
+    if (option.frequency == "monthly" && option.days != undefined && Object.keys(option).length == 2) {
         const stringpart = "Every month on the "
         //assuming simple rules only for repetition picker, thus days list will only have 1 element.
         //unlike complex rules from ai parsed repetitions, which might have "every 2nd, 5th and 20th of the month"
@@ -23,9 +47,8 @@ function formatOptionsToText(option: recurrence): string {
         if (option.days[0] == 1) return stringpart + "2nd"
         if (option.days[0] == 2) return stringpart + "3rd"
         else return stringpart + (option.days[0] + 1) + "th"
-
-
     }
+
 
     return ""
 }
@@ -46,7 +69,7 @@ export default function RepetitionPicker(props: RepetitionPickerProps) {
             {/* TODO: connect repetition status of the event to what displas on the button*/}
 
             {isOpen && (<span className="repetition-menu">
-                <span> test</span>
+                <span> IN CONSTRUCTION: not done implementation</span>
                 {props.options.map((option) => (
                     <button
                         type="button"

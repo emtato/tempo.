@@ -355,21 +355,32 @@ export default function Popup({
         let options: recurrence[] = []
         const everyDayRecurrence: recurrence = {frequency: "daily"}
         options.push(everyDayRecurrence)
-        let repeatEveryWeek = "" //every monday
+
+        const dateObj = Temporal.PlainDate.from(selectedStartDate)
+        const weekday = dateObj.dayOfWeek //1-7
+        let repeatEveryWeek: recurrence = {frequency: "weekly", dayOfWeek: [weekday]} //ex: every monday
+        let everyOtherWeek: recurrence = {frequency: "weekly", dayOfWeek: [weekday], skipInterval: 1}
+        options.push(repeatEveryWeek)
+
+        let weekRules: recurrence //every weekday/weekend (depending on its week day / weekend status)
+        if (weekday < 6) { //weekday
+            weekRules = {frequency: "weekly", dayOfWeek: [1, 2, 3, 4, 5]}
+        } else {
+            weekRules = {frequency: "weekly", dayOfWeek: [6, 7]}
+        }
+        options.push(weekRules)
+
         const date = parseInt(selectedStartDate.split("-")[2]) - 1
-        let repeatEveryMonth: recurrence = {frequency: "month", days: [date]} //every xth of the month
+        let repeatEveryMonth: recurrence = {frequency: "monthly", days: [date]} //every xth of the month
         options.push(repeatEveryMonth)
 
-        let weekRules = "" //every weekday/weekend (depending on its week day / weekend status)
-        let everyOtherWeek = ""
 
-        if (selectedStartDate != selectedEndDate) {
-            // multiple day event, repetition option should include both days
-            //"every monday to wednesday"/ "every 3rd-7th of the month"
-        } else {
-
-        }
-        //TODO: find day of the week
+        // if (selectedStartDate != selectedEndDate) {
+        //     // multiple day event, repetition option should include both days
+        //     //"every monday to wednesday"/ "every 3rd-7th of the month"
+        // } else {
+        //
+        // }
         return options
     }
 

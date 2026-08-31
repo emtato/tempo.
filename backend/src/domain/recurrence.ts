@@ -1,6 +1,6 @@
 export interface recurrence {
-    frequency: string; //daily, every week, every month, every year
-    dayOfWeek?: number[] //if the recurrence depends on weekday instead of days, pick which weekday
+    frequency: string; //daily, weekly, monthly, yearly
+    dayOfWeek?: number[] //if the recurrence depends on weekday instead of days, pick which weekday. 1-7 numbered (mon first)
 
     days?: number[] //nº of days after the beginning of the frequency unit: 0 days would be sunday for week, 1st of the month etc.
     skipInterval?: number; //if monthly: (monthly + skipinterval 1: every other month)  if weekly + weekday + skipint 2, every 3rd {weekday}
