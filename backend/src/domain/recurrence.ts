@@ -7,6 +7,7 @@ export interface recurrence {
     position?: number[] //if positive: selects {position}th occurence of weekday. if negative, go backwards and select that occurence
     months?: number[] //if yearly, might need specific months: every march and may
 
+    startDate: string //YYYY-MM-DD
     endDate?: string; //YYYY-MM-DD. all repetitions of this event end at or before this date
 }
 //dayOfWeek, days, position and months are lists because of rules like "last weekday of the month" -> would need to contain all week days and determine which one is the last
