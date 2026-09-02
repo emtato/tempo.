@@ -32,21 +32,21 @@ function treatWeekRep(dayOfWeek: number[], other: boolean) {
 }
 
 export function formatOptionsToText(option: recurrence): string {
-    if (option.frequency == "daily" && Object.keys(option).length === 1) { //only frequency field exists: every day
+    if (option.frequency == "daily" && Object.keys(option).length === 2) { //only frequency field exists: every day (aside form start date)
         return "Daily"
     }
-    if (option.frequency == 'daily' && option.skipInterval != undefined && Object.keys(option).length == 2) { //every x days
+    if (option.frequency == 'daily' && option.skipInterval != undefined && Object.keys(option).length == 3) { //every x days
         if (option.skipInterval == 1) return "Every other day"
         return "Every " + option.skipInterval + " days"
     }
-    if (option.frequency == 'weekly' && option.dayOfWeek != undefined && Object.keys(option).length == 2) { //every week, weekend, weekday
+    if (option.frequency == 'weekly' && option.dayOfWeek != undefined && Object.keys(option).length == 3) { //every week, weekend, weekday
         return treatWeekRep(option.dayOfWeek, false)
     }
-    if (option.frequency == 'weekly' && option.dayOfWeek != undefined && option.skipInterval != undefined && Object.keys(option).length == 3) { //every other week
+    if (option.frequency == 'weekly' && option.dayOfWeek != undefined && option.skipInterval != undefined && Object.keys(option).length == 4) { //every other week
         if (option.skipInterval == 1) return treatWeekRep(option.dayOfWeek, true)
         //TODO? (maybe)
     }
-    if (option.frequency == "monthly" && option.days != undefined && Object.keys(option).length == 2) { //every month on the xth day
+    if (option.frequency == "monthly" && option.days != undefined && Object.keys(option).length == 3) { //every month on the xth day
         const stringpart = "Every month on the "
         //assuming simple rules only for repetition picker, thus days list will only have 1 element.
         //unlike complex rules from ai parsed repetitions, which might have "every 2nd, 5th and 20th of the month"
@@ -55,7 +55,7 @@ export function formatOptionsToText(option: recurrence): string {
         if (option.days[0] == 2) return stringpart + "3rd"
         else return stringpart + (option.days[0] + 1) + "th"
     }
-    if (option.frequency == "yearly" && option.days != undefined && Object.keys(option).length == 2) {
+    if (option.frequency == "yearly" && option.days != undefined && Object.keys(option).length == 3) {
         return "Every Year"
     }
     return ""
