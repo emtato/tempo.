@@ -1,3 +1,5 @@
+import {recurrence} from "./recurrence.js";
+
 /**
  * Core calendar-event types.
  *
@@ -18,6 +20,7 @@ export interface CalendarEvent {
         location?: string;
         description?: string;
         guests?: string;
+        recurrence?: recurrence;
     };
 }
 
@@ -33,5 +36,6 @@ export interface SaveCalendarEventInput {
         location: string;
         description: string;
         guests: string;
+        recurrence?: recurrence;
     };
 }

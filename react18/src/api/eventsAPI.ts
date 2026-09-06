@@ -6,6 +6,7 @@ import {simpleTimeLocationExtractor} from "../utils/simple_time_location_extract
 import type {DeletedEvent} from "../Calendarapp";
 import importedDefaultEvents from "../data/defaultEvents.json";
 import {Temporal} from "temporal-polyfill";
+import {recurrence} from "../../../backend/src/domain/recurrence";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 export const DEMO_USER_ID = "DemoUserId";
@@ -50,7 +51,7 @@ export async function getCalendarEventById(eventId: string): Promise<CalendarEve
  * `event`: the user-entered information for the new event
  * Returns: the saved event, including the ID assigned by the backend
  */
-export async function saveCalendarEvent(event: SaveCalendarEventInput, userId: string): Promise<CalendarEvent> {
+export async function saveCalendarEvent(event: SaveCalendarEventInput, userId: string, repetitionObject: recurrence | undefined): Promise<CalendarEvent> {
     //run time/location extractor again in case the user saved it before timer ran out
     const extractionResult = simpleTimeLocationExtractor(event.title, false, false, event.startDate, event.startTime)
     const returnTitle = extractionResult.returnTitle;
@@ -73,6 +74,9 @@ export async function saveCalendarEvent(event: SaveCalendarEventInput, userId: s
     if (location != "") {
         event.extendedProps.location = location
     }
+    //TODO: detect if recurrence language is used in title ("every", "on {dayofWeek}s", etc). either send to ai or try to parse yourself?
+    if (repetitionObject) event.extendedProps.recurrence = repetitionObject;
+
     if (userId === DEMO_USER_ID) {
         const localEvent = convertToCalendarEvent(event)
         const localEvents = readLocalEvents()
@@ -83,7 +87,6 @@ export async function saveCalendarEvent(event: SaveCalendarEventInput, userId: s
         } else {
             localEvents[existingIndex] = localEvent
         }
-
         writeLocalEvents(localEvents)
         return localEvent;
     }

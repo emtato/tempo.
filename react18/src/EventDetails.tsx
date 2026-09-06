@@ -129,6 +129,7 @@ export default function Popup({
     const [locationModified, setLocationModified] = useState(false)
     const [guests, setGuests] = useState(gsts)
     const [repetitionString, setRepetitionString] = useState("Does not repeat")
+    const [repetitionObject, setRepetitionObject] = useState<recurrence | undefined>(undefined)
     const dragStart = useRef<{
         pointerX: number
         pointerY: number
@@ -352,6 +353,7 @@ export default function Popup({
     function repetitionPicked(option: recurrence) {
         console.log("repetitionPicked", option)
         setRepetitionString("Repeats " + formatOptionsToText(option))
+        setRepetitionObject(option)
     }
 
     function generateRepetitionOptions(): recurrence[] {
@@ -372,7 +374,7 @@ export default function Popup({
 
         let weekRules: recurrence //every weekday/weekend (depending on its week day / weekend status)
         if (weekday < 6) { //weekday
-            weekRules = {startDate: "", frequency: "weekly", dayOfWeek: [1, 2, 3, 4, 5]}
+            weekRules = {startDate: selectedStartDate, frequency: "weekly", dayOfWeek: [1, 2, 3, 4, 5]}
         } else {
             weekRules = {frequency: "weekly", dayOfWeek: [6, 7], startDate: selectedStartDate}
         }
@@ -388,9 +390,7 @@ export default function Popup({
         // if (selectedStartDate != selectedEndDate) {
         //     // multiple day event, repetition option should include both days
         //     //"every monday to wednesday"/ "every 3rd-7th of the month"
-        // } else {
-        //
-        // }
+        // } else {}
         return options
     }
 
@@ -449,7 +449,6 @@ export default function Popup({
         setEventID("")
         setAllday(false)
         setEndTimeModified(false);
-
         onClose();
     }
 
@@ -477,7 +476,7 @@ export default function Popup({
             }
         }
         const userID = user ? user.id : DEMO_USER_ID
-        await saveCalendarEvent(event, userID)
+        await saveCalendarEvent(event, userID, repetitionObject)
         onEventsChanged(); //refresh calendar events
         closePopup()
     }

@@ -78,7 +78,6 @@ export default function RepetitionPicker(props: RepetitionPickerProps) {
             <button className="repeat-button" type="button" onClick={() => {
                 setIsOpen(true)
             }}>{props.repetitionString}</button>
-            {/* TODO: connect repetition status of the event to what displas on the button*/}
 
             {isOpen && (<span className="repetition-menu">
                 <span> IN CONSTRUCTION: not done implementation</span>
