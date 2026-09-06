@@ -88,29 +88,57 @@ function formatMinutesAsTime(timeInMinutes: number): string {
     return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`
 }
 
-function extractDates(title: string) {
-    const monthFirstDatePattern = String.raw`(?:(?!now\b)([a-z]{2,9})\s*(0?[1-9]|[12]\d|3[01])(?!\d)|(\bnow\b))`;
-    const dateRangePattern = new RegExp(String.raw`(?:from\s+)?${monthFirstDatePattern}\s*(?:-|to|until|through)\s*${monthFirstDatePattern}`, "i");
+interface ParsedDateEndpoint {
+    month: number,
+    day: number,
+    isNow: boolean
+}
+
+// since sept 30 or 30 sept work, input params: sept 30: monthfirst_month = sept. monthfirst_day = 30. others are undef
+function normalizeDateInput(monthFirst_Month: string | undefined,
+                            monthFirst_Day: string | undefined,
+                            dayFirst_Day: string | undefined,
+                            dayFirst_Month: string | undefined,
+                            now: string | undefined): ParsedDateEndpoint | undefined {
+    if (now) {
+        const currentDate = new Date()
+        return {
+            month: currentDate.getMonth() + 1,
+            day: currentDate.getDate(),
+            isNow: true
+        }
+    }
+
+    //Put both "Sep 30" and "30 Sep" back into the month/day order used by the rest of the extractor.
+    const monthText = (monthFirst_Month ?? dayFirst_Month)?.toLowerCase()
+    const dayText = monthFirst_Day ?? dayFirst_Day
+    if (!monthText || !dayText) return
+
+    const month = MONTH_ALIASES.get(monthText)
+    if (month === undefined || month === 0) return
+
+    return {
+        month,
+        day: Number(dayText),
+        isNow: false
+    }
+}
+
+function extractDates(title: string, selectedStartDate?: string): [string, string, string, boolean] | undefined {
+    //actual month strings are checked after matching, so this only scans for possible month-word lengths
+    //Each endpoint has five captures: month/day, day/month, or now.
+    const dateEndpointPattern = String.raw`(?:(?!now\b)(?:([a-z]{2,9})\.?(?![a-z])\s*(0?[1-9]|[12]\d|3[01])(?!\d)|(0?[1-9]|[12]\d|3[01])(?!\d)\s*([a-z]{2,9})\.?(?![a-z]))|(\bnow\b))`;
+    const dateRangePattern = new RegExp(String.raw`(?:from\s+)?${dateEndpointPattern}\s*(?:-|to|until|through|till)\s*${dateEndpointPattern}`, "i");
     const dateRangeMatch = title.match(dateRangePattern);
     if (dateRangeMatch) {
-        const startMonthText = (dateRangeMatch[1] ?? dateRangeMatch[3]).toLowerCase()
-        const endMonthText = (dateRangeMatch[4] ?? dateRangeMatch[6]).toLowerCase()
-        let startMonth = MONTH_ALIASES.get(startMonthText)
-        let endMonth = MONTH_ALIASES.get(endMonthText)
-        if (startMonth == undefined || endMonth == undefined) return // no actual months found
+        const start = normalizeDateInput(dateRangeMatch[1], dateRangeMatch[2], dateRangeMatch[3], dateRangeMatch[4], dateRangeMatch[5])
+        const end = normalizeDateInput(dateRangeMatch[6], dateRangeMatch[7], dateRangeMatch[8], dateRangeMatch[9], dateRangeMatch[10])
+        if (!start || !end) return // no actual months found
 
-        let startDay = Number(dateRangeMatch[2])
-        let endDay = Number(dateRangeMatch[5])
-        const currentDate = new Date()
-
-        if (startMonth == 0) { //set month and date to current values if its now
-            startMonth = currentDate.getMonth() + 1
-            startDay = currentDate.getDate()
-        }
-        if (endMonth == 0) {
-            endMonth = currentDate.getMonth() + 1
-            endDay = currentDate.getDate()
-        }
+        const startMonth = start.month
+        const endMonth = end.month
+        const startDay = start.day
+        const endDay = end.day
         const startMonthMaxDays = MONTH_RULES.get(startMonth)
         const endMonthMaxDays = MONTH_RULES.get(endMonth)
         if (startMonthMaxDays === undefined || endMonthMaxDays === undefined) return
@@ -121,13 +149,32 @@ function extractDates(title: string) {
         //assume if startMonth > EndMonth, its like end of year (dec-feb). TODO: implement better flexibility: select year possibility
         const startDate = String(startMonth).padStart(2, "0") + "-" + String(startDay).padStart(2, "0")
         const endDate = String(endMonth).padStart(2, "0") + "-" + String(endDay).padStart(2, "0")
-        return [startDate, endDate, dateRangeMatch[0]]
+        return [startDate, endDate, dateRangeMatch[0], start.isNow]
+    }
+    //no date range found. attempt "until {date}" format
+    const untilDatePattern = new RegExp(String.raw`(?:until|till)\s+${dateEndpointPattern}`, "i")
+    const untilDateMatch = title.match(untilDatePattern)
+    if (untilDateMatch) {
+        const end = normalizeDateInput(untilDateMatch[1], untilDateMatch[2], untilDateMatch[3], untilDateMatch[4], untilDateMatch[5])
+        if (!end || end.isNow) return
+        const endMonthMaxDays = MONTH_RULES.get(end.month)
+        if (endMonthMaxDays === undefined || end.day > endMonthMaxDays) return
+        let date: Date;
+        if (selectedStartDate === undefined) {// no event start supplied, so use the current date
+            date = new Date()
+        } else { //until interpreted as "this event's starting time to specified end time"
+            date = new Date(selectedStartDate + "T00:00:00")
+        } //TODO: fix time issue of "until" for month view: until date sets starttime to current time
+
+        const startDate = String(date.getMonth() + 1).padStart(2, "0") + "-" + String(date.getDate()).padStart(2, "0")
+        const endDate = String(end.month).padStart(2, "0") + "-" + String(end.day).padStart(2, "0")
+        return [startDate, endDate, untilDateMatch[0], true]
     }
 
 }
 
 export const simpleTimeLocationExtractor = (title: string, timeModified: boolean,
-                                            locationModified: boolean): TitleExtractionResult => {
+                                            locationModified: boolean, selectedStartDate: string, startTime: number): TitleExtractionResult => {
     let rangeInProgress = false
     let returnTime = ""
     let returnEndTime = ""
@@ -139,13 +186,27 @@ export const simpleTimeLocationExtractor = (title: string, timeModified: boolean
     let dateRangeExtracted = false
     let requiresConfirmation = false
     //try time range
-    if (title.includes("to") || title.includes("-")) rangeInProgress = true
+    if (/\b(?:to|until|till)\b|-/i.test(title)) rangeInProgress = true
 
-    const timeRangePattern = /(?:from\s+)?(?:at\s+)?(?<!\w)((?:(?:0?[1-9]|1[0-2])(?:[.:][0-5]\d)?\s*[ap](?:\.?m\.?)|(?:[01]?\d|2[0-3])(?:[.:][0-5]\d)?))\s*(?:-|to)\s*((?:(?:0?[1-9]|1[0-2])(?:[.:][0-5]\d)?\s*[ap](?:\.?m\.?)|(?:[01]?\d|2[0-3])(?:[.:][0-5]\d)?))(?!\w)/i;
-    const malformedTimeRangePattern = /(?:(?<!\w)(?:0|1[3-9]|2[0-3])(?:[.:][0-5]\d)?\s*[ap](?:\.?m\.?)(?!\w)\s*(?:-|to)|(?:-|to)\s*(?<!\w)(?:0|1[3-9]|2[0-3])(?:[.:][0-5]\d)?\s*[ap](?:\.?m\.?)(?!\w))/i
+    const timePattern = String.raw`(?:(?:0?[1-9]|1[0-2])(?:[.:][0-5]\d)?\s*[ap](?:\.?m\.?)|(?:[01]?\d|2[0-3])(?:[.:][0-5]\d)?)`
+    const timeRangePattern = new RegExp(String.raw`(?:from\s+)?(?:at\s+)?(?<!\w)(${timePattern})\s*(?:-|to|until|till)\s*(${timePattern})(?!\w)`, "i")
+    const malformedTimeRangePattern = /(?:(?<!\w)(?:0|1[3-9]|2[0-3])(?:[.:][0-5]\d)?\s*[ap](?:\.?m\.?)(?!\w)\s*(?:-|to|until|till)|(?:-|to|until|till)\s*(?<!\w)(?:0|1[3-9]|2[0-3])(?:[.:][0-5]\d)?\s*[ap](?:\.?m\.?)(?!\w))/i
     const timeRangeRejected = malformedTimeRangePattern.test(title)
-    const timeRangeMatch = timeRangeRejected ? null : title.match(timeRangePattern);
-    if (timeRangeMatch) {
+    const timeRangeMatch = timeRangeRejected ? null : title.match(timeRangePattern)
+    const nowToTimePattern = new RegExp(String.raw`(?:\b(?:until|till)\s+|\bnow\s+to\s+)(${timePattern})(?![\w:])`, "i")
+    const nowToTimeMatch = title.match(nowToTimePattern)
+    if (nowToTimeMatch && !timeRangeMatch) {
+        const currentDate = new Date()
+        const parsedEndTime = parseRangeTime(nowToTimeMatch[1])
+        const currentTimeInMinutes = currentDate.getHours() * 60 + currentDate.getMinutes()
+        const startsExplicitlyNow = /^now\b/i.test(nowToTimeMatch[0])
+        timeRangeExtracted = true
+        returnTime = formatMinutesAsTime(startsExplicitlyNow ? currentTimeInMinutes : (startTime ?? currentTimeInMinutes))
+        returnEndTime = formatMinutesAsTime(parsedEndTime.timeInMinutes)
+        returnTitle = returnTitle.replace(nowToTimeMatch[0], "").replace(/\s+/g, " ").trim()
+    }
+
+    if (timeRangeMatch && !timeRangeExtracted) {
         timeRangeExtracted = true;
         const parsedStartTime = parseRangeTime(timeRangeMatch[1])
         const parsedEndTime = parseRangeTime(timeRangeMatch[2])
@@ -173,7 +234,11 @@ export const simpleTimeLocationExtractor = (title: string, timeModified: boolean
     }
     //try date range
     let extractedtext = "";
-    [returnDate, returnEndDate, extractedtext] = extractDates(title) ?? ["", "", ""]
+    let dateRangeStartsNow = false;
+    const extractedDates = extractDates(title, selectedStartDate)
+    if (extractedDates) {
+        [returnDate, returnEndDate, extractedtext, dateRangeStartsNow] = extractedDates
+    }
     const currentYear = new Date().getFullYear() //TODO: eventually depend on clicked date's year, not current year
     if (returnDate !== "" && returnEndDate !== "") {
         if (returnEndDate < returnDate) { //end before start? prob extending into next year
@@ -182,10 +247,18 @@ export const simpleTimeLocationExtractor = (title: string, timeModified: boolean
             returnEndDate = currentYear + '-' + returnEndDate
         }
         returnDate = currentYear + '-' + returnDate
+        if (dateRangeStartsNow && !timeRangeExtracted) {
+            const currentDate = new Date()
+            const currentTimeInMinutes = currentDate.getHours() * 60 + currentDate.getMinutes()
+            const startsExplicitlyNow = /^now\b/i.test(extractedtext)
+            returnTime = formatMinutesAsTime(startsExplicitlyNow ? currentTimeInMinutes : (startTime ?? currentTimeInMinutes))
+            returnEndTime = "00:00"
+            timeRangeExtracted = true
+        }
     }
     returnTitle = returnTitle.replace(extractedtext, "").replace(/\s+/g, " ").trim();
 
-    //TODO: "until": until 3pm: event lasts now until 3pm. "until aug 30": event from now to aug 30 12am. combine: both (3pm aug 30 or aug 30 3pm)
+    //TODO: combine an end time and date (3pm aug 30 or aug 30 3pm)
     //try 1 time only
     if (!timeModified && !timeRangeExtracted && !timeRangeRejected) {
         if ((/\bnoon\b/i).test(title) || (/\bmidnight\b/i).test(title)) {

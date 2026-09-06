@@ -52,7 +52,7 @@ export async function getCalendarEventById(eventId: string): Promise<CalendarEve
  */
 export async function saveCalendarEvent(event: SaveCalendarEventInput, userId: string): Promise<CalendarEvent> {
     //run time/location extractor again in case the user saved it before timer ran out
-    const extractionResult = simpleTimeLocationExtractor(event.title, false, false)
+    const extractionResult = simpleTimeLocationExtractor(event.title, false, false, event.startDate, event.startTime)
     const returnTitle = extractionResult.returnTitle;
     const startTime = extractionResult.startTime;
     const endTime = extractionResult.endTime;
