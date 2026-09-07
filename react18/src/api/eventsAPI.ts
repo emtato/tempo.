@@ -20,7 +20,6 @@ const LOCAL_EVENTS_STORAGE_KEY = "calendar-demo-events-v1";
  * endStr is exclusive (Fullcalendar)
  */
 export async function getCalendarEvents(startDate: string, endDate: string, userId: string): Promise<CalendarEvent[]> {
-
     if (userId === DEMO_USER_ID) { //not logged in, no db contact
         return readLocalEvents();
     }
@@ -75,6 +74,8 @@ export async function saveCalendarEvent(event: SaveCalendarEventInput, userId: s
         event.extendedProps.location = location
     }
     //TODO: detect if recurrence language is used in title ("every", "on {dayofWeek}s", etc). either send to ai or try to parse yourself?
+    console.log("repetition object", repetitionObject)
+
     if (repetitionObject) event.extendedProps.recurrence = repetitionObject;
 
     if (userId === DEMO_USER_ID) {

@@ -84,7 +84,7 @@ export default function RepetitionPicker(props: RepetitionPickerProps) {
                 {props.options.map((option) => (
                     <button
                         type="button"
-                        //key={date.getTime()}
+                        key={option.frequency}
                         className="recurrence-option-button"
                         onClick={() => optionSelected(option)}>
                         {formatOptionsToText(option)}</button>

@@ -348,7 +348,6 @@ export default function Popup({
     // ------------------------------------------------
 
     function repetitionPicked(option: recurrence) {
-        console.log("repetitionPicked", option)
         setRepetitionString("Repeats " + formatOptionsToText(option))
         setRepetitionObject(option)
     }
