@@ -74,8 +74,6 @@ export async function saveCalendarEvent(event: SaveCalendarEventInput, userId: s
         event.extendedProps.location = location
     }
     //TODO: detect if recurrence language is used in title ("every", "on {dayofWeek}s", etc). either send to ai or try to parse yourself?
-    console.log("repetition object", repetitionObject)
-
     if (repetitionObject) event.extendedProps.recurrence = repetitionObject;
 
     if (userId === DEMO_USER_ID) {

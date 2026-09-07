@@ -84,7 +84,7 @@ export default function RepetitionPicker(props: RepetitionPickerProps) {
                 {props.options.map((option) => (
                     <button
                         type="button"
-                        key={option.frequency}
+                        key={option.frequency + option.days + option.dayOfWeek + option.skipInterval} //random key so react stops yelling
                         className="recurrence-option-button"
                         onClick={() => optionSelected(option)}>
                         {formatOptionsToText(option)}</button>
