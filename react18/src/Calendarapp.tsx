@@ -358,7 +358,7 @@ export default function CalendarApp() {
     const [isAuthOpen, setisAuthOpen] = useState(false)
     const [isIntroOpen, setisIntroOpen] = useState(() => localStorage.getItem("intro-seen") !== "true") //cache for intro
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
-    const [authOrigin, setAuthOrigin] = useState({x: 0, y: 0})
+    const [authOrigin, setAuthOrigin] = useState({xPercent: 0, yPercent: 0})
     const [calendarView, setCalendarView] = useState(SCROLLING_MONTH_VIEW)
     const [loginChosen, setLoginChosen] = useState(() => localStorage.getItem("intro-seen") === "true") //state to track which login button was chosen: from intro's signup or login
     //logic: if intro page will not be shown (page viewed before), ONLY login button is clickable. so if seen, state should be true
@@ -509,10 +509,15 @@ export default function CalendarApp() {
 
     function openLogin(event: React.MouseEvent<HTMLButtonElement>) {
         const button = event.currentTarget.getBoundingClientRect();
+        const panelLeft = window.innerWidth * 0.33;
+        const panelWidth = window.innerWidth - panelLeft;
+        const centerX = button.left + button.width / 2;
+        const centerY = button.top + button.height / 2;
+        const panelX = centerX - panelLeft;
 
         setAuthOrigin({
-            x: button.left + button.width / 2,
-            y: button.top + button.height / 2,
+            xPercent: (panelX / panelWidth) * 100,
+            yPercent: (centerY / window.innerHeight) * 100,
         });
         closePopup()
         setisAuthOpen(true)

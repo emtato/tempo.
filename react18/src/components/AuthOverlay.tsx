@@ -5,8 +5,8 @@ interface AuthOverlayProps {
     onClose: () => void;
     onRevealComplete: () => void;
     origin: {
-        x: number;
-        y: number;
+        xPercent: number;
+        yPercent: number;
     };
     onAuthSuccess: () => void;
     loginChosen: boolean;
@@ -73,8 +73,8 @@ export default function AuthOverlay({onClose, onRevealComplete, origin, loginCho
         <div
             className="auth-panel"
             style={{
-                "--auth-origin-x": `${origin.x}px`,
-                "--auth-origin-y": `${origin.y}px`,
+                "--auth-origin-x": `${origin.xPercent}%`,
+                "--auth-origin-y": `${origin.yPercent}%`,
             } as React.CSSProperties}
             onAnimationEnd={(event) => {
                 if (event.target === event.currentTarget) onRevealComplete()

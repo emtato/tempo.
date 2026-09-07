@@ -55,8 +55,7 @@
     color: var(--colour-off-white);
     box-shadow: -6px 0 10px rgba(20, 14, 32, 0.42);
     z-index: 1;
-
-    animation: auth-overlay-reveal 1750ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: auth-overlay-reveal 500ms linear both;
     will-change: clip-path;
 }
 
@@ -78,10 +77,11 @@
 
 @keyframes auth-overlay-reveal {
     from {
-        clip-path: circle(0 at calc(var(--auth-origin-x) - 33vw) var(--auth-origin-y));
+        clip-path: circle(0 at var(--auth-origin-x) var(--auth-origin-y));
     }
+
     to {
-        clip-path: circle(150vmax at calc(var(--auth-origin-x) - 33vw) var(--auth-origin-y));
+        clip-path: circle(200vmax at var(--auth-origin-x) var(--auth-origin-y));
     }
 }
 
