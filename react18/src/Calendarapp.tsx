@@ -24,7 +24,7 @@ import drop = Simulate.drop;
 import {SaveCalendarEventInput} from "../../backend/src/domain/calendar-event";
 
 // ----------------------------------------------------
-// Types
+// Selection, viewport-anchor, and deleted-event types
 // ----------------------------------------------------
 
 interface HighlightedRange {
@@ -58,7 +58,7 @@ export interface DeletedEvent {
 }
 
 // ----------------------------------------------------
-// Calendar data and date utils
+// Date formatting, event defaults, and current-view identifiers
 // ----------------------------------------------------
 
 function toLocalDateString(date: Date) { //convert date to YYYY-MM-DD readable format
@@ -74,12 +74,21 @@ const DEFAULT_START_TIME = 9 * 60
 const DEFAULT_END_TIME = 10 * 60
 const DRAFT_EVENT_ID = 'draft-event'
 const SCROLLING_MONTH_VIEW = 'scrollingMonth'
+
+// ----------------------------------------------------
+// Infinite-scroll DOM selectors, range thresholds, and empty ref callbacks
+// ----------------------------------------------------
+
 const MONTH_SCROLLER_SELECTOR = '.calendar-month-weeks'
 const DATE_CELL_SELECTOR = '[role="gridcell"][data-date]' //find calendar date cells within the scroller's html
 const RANGE_MONTHS_PER_SIDE = 12
 const RANGE_RECENTER_THRESHOLD_MONTHS = RANGE_MONTHS_PER_SIDE - 1
 const RANGE_RESTORE_RETRIES = 2
 const NOOP = () => undefined
+
+// ----------------------------------------------------
+// FullCalendar plugins, toolbar, and month/year view configuration
+// ----------------------------------------------------
 
 const CALENDAR_PLUGINS = [themePlugin, dayGridPlugin, timeGridPlugin, multiMonthPlugin, interactionPlugin]
 
@@ -134,7 +143,8 @@ const CALENDAR_VIEWS = {
 } satisfies NonNullable<CalendarOptions['views']>
 
 // ----------------------------------------------------
-// Infinite month scrolling
+// Infinite-scroll DOM lookup, viewport anchoring, and wheel normalization
+// Finds rendered rows and preserves the visible week when the date range changes
 // ----------------------------------------------------
 
 function fromLocalDateString(dateString: string | undefined) { //convert string to date object
@@ -217,6 +227,9 @@ function getWheelPixelDelta(event: WheelEvent, pageHeight: number) { //normalize
     return event.deltaY
 }
 
+// ----------------------------------------------------
+// FullCalendar view quirks, draft/custom event rendering, and popup date/time helpers
+// ----------------------------------------------------
 
 function isMonthGridView(viewType: string) {
     return viewType === 'dayGridMonth' ||
@@ -298,12 +311,12 @@ function createDateList(startDate: string, daysBetween?: number) { //create list
 }
 
 // ====================================================
-// calendar app
+// Calendar app
 // ====================================================
 
 export default function CalendarApp() {
     // ------------------------------------------------
-    // state
+    // Popup/event fields, overlays, and calendar scroll coordination state
     // ------------------------------------------------
 
     const [isPopOpen, setIsPopOpen] = useState(false)
@@ -351,6 +364,11 @@ export default function CalendarApp() {
     const rangeRecenterInProgressRef = useRef(false)
     const rangeAnchorCleanupRef = useRef<() => void>(NOOP)
     const scrollPositionToRestore = useRef<PendingRangeViewportPosition | null>(null) //contains date row + offset + first rendered date (to detect when old rows replaced)
+
+    // ------------------------------------------------
+    // Toolbar navigation, rapid-arrow targeting, and compact view selection
+    // Keeps fast repeated arrows based on the requested month, not the slower visible month
+    // ------------------------------------------------
 
     const scrollVisibleMonth = useCallback((offset: number) => { //scroll to prev/next from arrows in toolbar
         let targetMonth = null;
@@ -430,7 +448,8 @@ export default function CalendarApp() {
     }), [calendarView])
 
     // ------------------------------------------------
-    // Sidebar functions
+    // Sidebar/user-menu controls and first-resize scroll restoration
+    // Re-aligns for 12 frames while FullCalendar resizes after the sidebar transition
     // ------------------------------------------------
 
     function closeSidebar() {
@@ -482,9 +501,10 @@ export default function CalendarApp() {
         align()
     }
 
-// ------------------------------------------------
-// login/intro
-// ------------------------------------------------
+    // ------------------------------------------------
+    // Login/intro controls, auth session, and user-scoped event loading
+    // ------------------------------------------------
+
     function openLogin(event: React.MouseEvent<HTMLButtonElement>) {
         const button = event.currentTarget.getBoundingClientRect();
 
@@ -516,9 +536,10 @@ export default function CalendarApp() {
             return getCalendarEvents(fetchInfo.startStr, fetchInfo.endStr, userId)
         }, [userId]
     )
-// ------------------------------------------------
-// Calendar refresh and temp events
-// ------------------------------------------------
+    // ------------------------------------------------
+    // Event refetching and infinite-range recenter/anchor restoration
+    // Keeps the same visible week while FullCalendar replaces rows above or below it
+    // ------------------------------------------------
 
     function refreshCalendar() {
         calendarComponentRef.current?.getApi().refetchEvents()
@@ -635,9 +656,9 @@ export default function CalendarApp() {
         }
     }
 
-// ------------------------------------------------
-// popup
-// ------------------------------------------------
+    // ------------------------------------------------
+    // Popup reset and delete/undo lifecycle
+    // ------------------------------------------------
 
     function closePopup() {
         const calendar = calendarComponentRef.current?.getApi()
@@ -692,6 +713,10 @@ export default function CalendarApp() {
         }
         setDeletePopup(false)
     }
+
+    // ------------------------------------------------
+    // Escape/N shortcuts, outside-click popup closing, and delete-timer cleanup
+    // ------------------------------------------------
 
     useEffect(() => { //keyboard shortcuts
         function handleKeyDown(event: KeyboardEvent) {
@@ -750,9 +775,9 @@ export default function CalendarApp() {
         }
     }, [])
 
-// ------------------------------------------------
-// user fullcalendar interactions
-// ------------------------------------------------
+    // ------------------------------------------------
+    // FullCalendar click/drag selection, popup hydration, and dropped-event persistence
+    // ------------------------------------------------
 
     function handleDateClick(clickInfo: DateClickInfo) {
         if (justDragged.current) {
@@ -928,9 +953,6 @@ export default function CalendarApp() {
         }
     }
 
-// ------------------------------------------------
-// render
-// ------------------------------------------------
     if (isPending) {
         return <div className="app loading-container">
             <div className="calendar-loading"> Loading..</div>
@@ -953,6 +975,11 @@ export default function CalendarApp() {
                     toolbarElements={calendarToolbarElements}
                     eventDrop={handleEventDrop}
                     viewDidMount={(viewInfo) => {
+                        // ------------------------------------------------
+                        // Toolbar DOM setup and visible-month title/range tracking
+                        // Reads rendered month rows because the scrolling view spans many months
+                        // ------------------------------------------------
+
                         const findToolbarTitle = () => {
                             const toolbarTitle = calendarMainRef.current?.querySelector<HTMLElement>('[role="heading"]')
 
@@ -992,6 +1019,12 @@ export default function CalendarApp() {
                                 recenterMonthRange(activeMonth, viewportPosition)
                             }
                         }
+
+                        // ------------------------------------------------
+                        // Programmatic month scrolling, scroll-end snapping, and initial alignment
+                        // Repeats alignment for 12 frames while FullCalendar finishes sizing rows
+                        // ------------------------------------------------
+
                         //scroll to month, used by initial loading alignemnt, snap to month,
                         const scrollToMonth = (date: Date, behavior: ScrollBehavior = 'auto') => {
                             const month = toLocalDateString(date).slice(0, 7)
