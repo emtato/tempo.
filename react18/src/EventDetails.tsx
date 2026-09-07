@@ -12,8 +12,9 @@ import toLocalDateString from "./Calendarapp"
 import RepetitionPicker from "./components/RepetitionPicker";
 import {recurrence} from "../../backend/src/domain/recurrence";
 import {formatOptionsToText} from "./components/RepetitionPicker"
+
 // ----------------------------------------------------
-// Configuration
+// Shared configuration, component types, and time utilities
 // ----------------------------------------------------
 
 const CALENDAR_OPTIONS = [
@@ -25,10 +26,6 @@ const CALENDAR_OPTIONS = [
 const MINUTES_PER_DAY = 24 * 60
 const DEFAULT_START_TIME = 9 * 60
 const DEFAULT_END_TIME = 10 * 60
-
-// ----------------------------------------------------
-// Time utils
-// ----------------------------------------------------
 
 function generateTimeOptions(startMinutes: number, endMinutes: number, interval: number) {
     const times: number[] = []
@@ -56,10 +53,6 @@ function toggleAmPm(minutesAfterMidnight: number) {
     }
     return normalizedMinutes - 12 * 60
 }
-
-// ----------------------------------------------------
-// Component prop types
-// ----------------------------------------------------
 
 interface PopupInfo { // describes the information the component expects
     /*
@@ -168,7 +161,7 @@ export default function Popup({
     const pickerEndDate = new Date(plainEndDate.year, plainEndDate.month - 1, plainEndDate.day)
 
     // ------------------------------------------------
-    // Popup positioning
+    // Popup positioning and dragging
     // ------------------------------------------------
 
     //calculate popup position
@@ -268,7 +261,7 @@ export default function Popup({
     }
 
     // ------------------------------------------------
-    // Input and title handlers
+    // Title extraction and date selection
     // ------------------------------------------------
 
     function handleTitleInputChange(extractionResult: TitleExtractionResult) {
@@ -350,6 +343,10 @@ export default function Popup({
         }
     }
 
+    // ------------------------------------------------
+    // Recurrence and time rules
+    // ------------------------------------------------
+
     function repetitionPicked(option: recurrence) {
         console.log("repetitionPicked", option)
         setRepetitionString("Repeats " + formatOptionsToText(option))
@@ -394,10 +391,6 @@ export default function Popup({
         return options
     }
 
-// ------------------------------------------------
-// Time handlers
-// ------------------------------------------------
-
     function handleStartTimeChange(nextStartTime: number) {
         let defaultEndTime = 0
         if (nextStartTime % 15 != 0) {
@@ -437,9 +430,9 @@ export default function Popup({
         setEndTime(nextEndTime);
     }
 
-// ------------------------------------------------
-// Popup lifecycle and persistence
-// ------------------------------------------------
+    // ------------------------------------------------
+    // Popup lifecycle and persistence
+    // ------------------------------------------------
 
     function closePopup() {
         setStartTime(DEFAULT_START_TIME)
@@ -499,9 +492,9 @@ export default function Popup({
         deleteEvent(event)
     }
 
-// ------------------------------------------------
-// Effects
-// ------------------------------------------------
+    // ------------------------------------------------
+    // Popup synchronization and keyboard effects
+    // ------------------------------------------------
 
     useEffect(() => { // sync the popup dates when CalendarApp opens it with a new date
         if (isOpen) {
@@ -553,10 +546,6 @@ export default function Popup({
             window.removeEventListener("keydown", handleKeyDown);
         };
     }, [isOpen]);
-
-// ------------------------------------------------
-// Render
-// ------------------------------------------------
 
     if (!isOpen) {
         return null
@@ -775,7 +764,7 @@ export default function Popup({
 
 
 // ====================================================
-// Expanded sidebar
+// Sidebar account controls and layouts
 // ====================================================
 
 interface UserAccountControlProps {
@@ -815,10 +804,6 @@ function UserAccountControl({setAuthOpen, onUserMenuOpen, user, minimized}: User
 }
 
 export function Sidebar({isOpen, onClose, setAuthOpen, onUserMenuOpen, user}: SidebarInfo) {
-    // ------------------------------------------------
-    // Render
-    // ------------------------------------------------
-
     if (!isOpen) {
         return null
     }
@@ -908,16 +893,8 @@ export function Sidebar({isOpen, onClose, setAuthOpen, onUserMenuOpen, user}: Si
     )
 }
 
-// ====================================================
-// Minimized sidebar
-// ====================================================
-
 //onclose will js be closing this small bar -> opening big bar
 export function MinimizedBar({isOpen, onClose, setAuthOpen, onUserMenuOpen, user}: SidebarInfo) {
-    // ------------------------------------------------
-    // Render
-    // ------------------------------------------------
-
     if (!isOpen) {
         return null
     }
