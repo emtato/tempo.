@@ -76,8 +76,9 @@ interface PopupInfo { // describes the information the component expects
     endTimeMod: boolean
     onEventsChanged: () => void
     deleteEvent: (event: DeletedEvent) => void;
-    gsts: string;
-    loc: string;
+    gsts: string; //guests
+    loc: string; //location
+    recurr: recurrence | undefined;
     onPositionChange: (nextPosition: { x: number; y: number }) => void
     user?: (typeof authClient.$Infer.Session)["user"];
 
@@ -102,7 +103,7 @@ interface SidebarInfo {
 export default function Popup({
                                   isOpen, onClose, position, startDate, endDate, dateList, initialStartTime,
                                   initialEndTime, titleText, descriptionText, id, allDay, endTimeMod, onEventsChanged,
-                                  deleteEvent, gsts, loc, onPositionChange, user
+                                  deleteEvent, gsts, loc, onPositionChange, user, recurr
                               }: PopupInfo) {
     // ------------------------------------------------
     // State and refs
@@ -121,8 +122,7 @@ export default function Popup({
     const [endTimeModified, setEndTimeModified] = useState(endTimeMod)
     const [locationModified, setLocationModified] = useState(false)
     const [guests, setGuests] = useState(gsts)
-    const [repetitionString, setRepetitionString] = useState("Does not repeat")
-    const [repetitionObject, setRepetitionObject] = useState<recurrence | undefined>(undefined)
+    const [repetitionObject, setRepetitionObject] = useState<recurrence | undefined>(recurr)
     const dragStart = useRef<{
         pointerX: number
         pointerY: number
@@ -348,7 +348,6 @@ export default function Popup({
     // ------------------------------------------------
 
     function repetitionPicked(option: recurrence) {
-        setRepetitionString("Repeats " + formatOptionsToText(option))
         setRepetitionObject(option)
     }
 
@@ -666,7 +665,7 @@ export default function Popup({
                                 </div>
                                 <RepetitionPicker onChange={repetitionPicked}
                                                   options={generateRepetitionOptions()}
-                                                  repetitionString={repetitionString}></RepetitionPicker>
+                                                  repetitionObject={repetitionObject}></RepetitionPicker>
                             </div>
                         </div>
                         <div className="form-row">

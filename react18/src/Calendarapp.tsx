@@ -22,6 +22,7 @@ import {UserMenu} from "./components/user/UserMenu";
 import {Simulate} from "react-dom/test-utils";
 import drop = Simulate.drop;
 import {SaveCalendarEventInput} from "../../backend/src/domain/calendar-event";
+import {recurrence} from "../../backend/src/domain/recurrence";
 
 // ----------------------------------------------------
 // Selection, viewport-anchor, and deleted-event types
@@ -339,6 +340,7 @@ export default function CalendarApp() {
     const [title, setTitle] = useState('')
     const [description, setDescription] = useState('')
     const [id, setId] = useState('')
+    const [recurrenceRule, setRecurrenceRule] = useState<recurrence | undefined>(undefined)
 
     const justDragged = useRef(false)
     const [allDay, setAllDay] = useState(false)
@@ -776,7 +778,7 @@ export default function CalendarApp() {
     }, [])
 
     // ------------------------------------------------
-    // FullCalendar click/drag selection, popup hydration, and dropped-event persistence
+    // FullCalendar click/drag selection, popup hydration, and dropped event persistence
     // ------------------------------------------------
 
     function handleDateClick(clickInfo: DateClickInfo) {
@@ -921,6 +923,8 @@ export default function CalendarApp() {
         setDescription(selectInfo.event.extendedProps.description)
         setGuests(selectInfo.event.extendedProps.guests)
         setLocation(selectInfo.event.extendedProps.location)
+        setRecurrenceRule(selectInfo.event.extendedProps.recurrence)
+        console.log("event clicked with " + selectInfo.event.extendedProps.recurrence)
     }
 
     async function handleEventDrop(dropInfo: EventDropInfo) {
@@ -946,7 +950,7 @@ export default function CalendarApp() {
                     guests: dropInfo.event.extendedProps.guests,
                 }
             }
-            await saveCalendarEvent(updatedEvent, userId)
+            await saveCalendarEvent(updatedEvent, userId, dropInfo.event.extendedProps.recurrence)
             refreshCalendar(); //refresh calendar events
         } else { //panic
             //TODO popup error?
@@ -1239,6 +1243,7 @@ export default function CalendarApp() {
                     gsts={guests}
                     onPositionChange={setPopupPos}
                     user={session?.user}
+                    recurr={recurrenceRule}
                 />
             )}
             <Sidebar isOpen={isSidebar} onClose={closeSidebar} setAuthOpen={openLogin}

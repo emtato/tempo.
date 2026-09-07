@@ -5,7 +5,7 @@ interface RepetitionPickerProps {
     onChange: (repetition: recurrence) => void; //callback send recurrence info back
     recurrenceSelection?: recurrence //will be modified by the popup and sent back when done to onchange
     options: recurrence[]; //options for simple repetition (based on date clicked, intelligently offer suggestions)
-    repetitionString: string;
+    repetitionObject: recurrence | undefined;
 }
 
 const dayToWeekDayMap: Record<number, string> = {
@@ -31,7 +31,8 @@ function treatWeekRep(dayOfWeek: number[], other: boolean) {
     return other ? 'Every other ' + dayToWeekDayMap[(dayOfWeek)[0]] : 'Every ' + dayToWeekDayMap[(dayOfWeek)[0]]
 }
 
-export function formatOptionsToText(option: recurrence): string {
+export function formatOptionsToText(option: recurrence | undefined): string {
+    if (option == undefined) return "Does not repeat"
     if (option.frequency == "daily" && Object.keys(option).length === 2) { //only frequency field exists: every day (aside form start date)
         return "Daily"
     }
@@ -77,7 +78,7 @@ export default function RepetitionPicker(props: RepetitionPickerProps) {
                   }}>
             <button className="repeat-button" type="button" onClick={() => {
                 setIsOpen(true)
-            }}>{props.repetitionString}</button>
+            }}>{formatOptionsToText(props.repetitionObject)}</button>
 
             {isOpen && (<span className="repetition-menu">
                 <span> IN CONSTRUCTION: not done implementation</span>
