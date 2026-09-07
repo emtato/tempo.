@@ -128,7 +128,7 @@ function extractDates(title: string, selectedStartDate?: string): [string, strin
     //actual month strings are checked after matching, so this only scans for possible month-word lengths
     //Each endpoint has five captures: month/day, day/month, or now.
     const dateEndpointPattern = String.raw`(?:(?!now\b)(?:([a-z]{2,9})\.?(?![a-z])\s*(0?[1-9]|[12]\d|3[01])(?!\d)|(0?[1-9]|[12]\d|3[01])(?!\d)\s*([a-z]{2,9})\.?(?![a-z]))|(\bnow\b))`;
-    const dateRangePattern = new RegExp(String.raw`(?:from\s+)?${dateEndpointPattern}\s*(?:-|to|until|through|till)\s*${dateEndpointPattern}`, "i");
+    const dateRangePattern = new RegExp(String.raw`(?:from\s+)?${dateEndpointPattern}\s*(?:-|to|until|through|till|up to)\s*${dateEndpointPattern}`, "i");
     const dateRangeMatch = title.match(dateRangePattern);
     if (dateRangeMatch) {
         const start = normalizeDateInput(dateRangeMatch[1], dateRangeMatch[2], dateRangeMatch[3], dateRangeMatch[4], dateRangeMatch[5])
@@ -152,7 +152,7 @@ function extractDates(title: string, selectedStartDate?: string): [string, strin
         return [startDate, endDate, dateRangeMatch[0], start.isNow]
     }
     //no date range found. attempt "until {date}" format
-    const untilDatePattern = new RegExp(String.raw`(?:until|till)\s+${dateEndpointPattern}`, "i")
+    const untilDatePattern = new RegExp(String.raw`(?:until|till|up to)\s+${dateEndpointPattern}`, "i")
     const untilDateMatch = title.match(untilDatePattern)
     if (untilDateMatch) {
         const end = normalizeDateInput(untilDateMatch[1], untilDateMatch[2], untilDateMatch[3], untilDateMatch[4], untilDateMatch[5])
@@ -186,11 +186,12 @@ export const simpleTimeLocationExtractor = (title: string, timeModified: boolean
     let dateRangeExtracted = false
     let requiresConfirmation = false
     //try time range
-    if (/\b(?:to|until|till)\b|-/i.test(title)) rangeInProgress = true
+    if (/\b(?:to|until|till|up to)\b|-/i.test(title)) rangeInProgress = true
+    //TODO: assume end range: sept 3-8 (not sept 3 to sept 8) or 3-8 sept
 
     const timePattern = String.raw`(?:(?:0?[1-9]|1[0-2])(?:[.:][0-5]\d)?\s*[ap](?:\.?m\.?)|(?:[01]?\d|2[0-3])(?:[.:][0-5]\d)?)`
-    const timeRangePattern = new RegExp(String.raw`(?:from\s+)?(?:at\s+)?(?<!\w)(${timePattern})\s*(?:-|to|until|till)\s*(${timePattern})(?!\w)`, "i")
-    const malformedTimeRangePattern = /(?:(?<!\w)(?:0|1[3-9]|2[0-3])(?:[.:][0-5]\d)?\s*[ap](?:\.?m\.?)(?!\w)\s*(?:-|to|until|till)|(?:-|to|until|till)\s*(?<!\w)(?:0|1[3-9]|2[0-3])(?:[.:][0-5]\d)?\s*[ap](?:\.?m\.?)(?!\w))/i
+    const timeRangePattern = new RegExp(String.raw`(?:from\s+)?(?:at\s+)?(?<!\w)(${timePattern})\s*(?:-|to|until|till|up to)\s*(${timePattern})(?!\w)`, "i")
+    const malformedTimeRangePattern = /(?:(?<!\w)(?:0|1[3-9]|2[0-3])(?:[.:][0-5]\d)?\s*[ap](?:\.?m\.?)(?!\w)\s*(?:-|to|until|till|up to)|(?:-|to|until|till|up to)\s*(?<!\w)(?:0|1[3-9]|2[0-3])(?:[.:][0-5]\d)?\s*[ap](?:\.?m\.?)(?!\w))/i
     const timeRangeRejected = malformedTimeRangePattern.test(title)
     const timeRangeMatch = timeRangeRejected ? null : title.match(timeRangePattern)
     const nowToTimePattern = new RegExp(String.raw`(?:\b(?:until|till)\s+|\bnow\s+to\s+)(${timePattern})(?![\w:])`, "i")
