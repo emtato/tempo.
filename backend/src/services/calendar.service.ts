@@ -68,6 +68,7 @@ function ConvertToCalendarEvent(input: SaveCalendarEventInput, userId: string): 
             location: input.extendedProps.location,
             description: input.extendedProps.description,
             guests: input.extendedProps.guests,
+            recurrence: input.extendedProps.recurrence,
         },
     };
     return event;

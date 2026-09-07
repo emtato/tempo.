@@ -75,7 +75,7 @@ export async function saveCalendarEvent(event: SaveCalendarEventInput, userId: s
     }
     //TODO: detect if recurrence language is used in title ("every", "on {dayofWeek}s", etc). either send to ai or try to parse yourself?
     if (repetitionObject) event.extendedProps.recurrence = repetitionObject;
-
+    console.log("saving event", event)
     if (userId === DEMO_USER_ID) {
         const localEvent = convertToCalendarEvent(event)
         const localEvents = readLocalEvents()
@@ -100,7 +100,6 @@ export async function saveCalendarEvent(event: SaveCalendarEventInput, userId: s
     })
     return response.json() //return id inside the returned full calendarEvent object
 }
-
 
 /**
  * Permanently remove an existing calendar event
