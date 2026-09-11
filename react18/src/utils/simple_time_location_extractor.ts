@@ -129,8 +129,8 @@ function normalizeDateInput(monthFirst_Month: string | undefined,
                 day: Number(monthFirst_single_date),
                 isNow: false
             }
-        } else if(monthLast_single) {
-             let month = MONTH_ALIASES.get(monthLast_single)
+        } else if (monthLast_single) {
+            let month = MONTH_ALIASES.get(monthLast_single)
             if (month === undefined || month === 0) return
             return {
                 month,
@@ -139,7 +139,7 @@ function normalizeDateInput(monthFirst_Month: string | undefined,
             }
         }
     }
- if (!monthText || !dayText) return
+    if (!monthText || !dayText) return
 
     let month = MONTH_ALIASES.get(monthText)
     if (month === undefined || month === 0) return
@@ -210,18 +210,56 @@ export const simpleTimeLocationExtractor = (title: string, timeModified: boolean
     let returnTitle = title
     let timeRangeExtracted = false
     let dateRangeExtracted = false
+    let dateRangeInProgress = false
     let requiresConfirmation = false
-    //try time range
-    if (/\b(?:to|until|till|up to)\b|-/i.test(title)) rangeInProgress = true
-    //TODO: assume end range: sept 3-8 (not sept 3 to sept 8) or 3-8 sept
 
+
+
+    //try date range
+    let extractedtext = "";
+    let dateRangeStartsNow = false;
+    const extractedDates = extractDates(title, selectedStartDate)
+    if (extractedDates) {
+        [returnDate, returnEndDate, extractedtext, dateRangeStartsNow] = extractedDates
+        dateRangeExtracted = true
+    }
+    const dateRangeInProgressMatch = title.match(
+        /(?<![a-z])([a-z]{2,9})\.?(?![a-z])\s*(0?[1-9]|[12]\d|3[01])(?!\d)\s*-\s*\d{0,2}(?!\d)/i
+    )
+    if (!dateRangeExtracted && dateRangeInProgressMatch) {
+        const possibleMonth = MONTH_ALIASES.get(dateRangeInProgressMatch[1].toLowerCase())
+        dateRangeInProgress = (possibleMonth !== undefined && possibleMonth !== 0)
+    }
+    const currentYear = new Date().getFullYear() //TODO: eventually depend on clicked date's year, not current year
+    if (returnDate !== "" && returnEndDate !== "") {
+        if (returnEndDate < returnDate) { //end before start? prob extending into next year
+            returnEndDate = currentYear + 1 + '-' + returnEndDate
+        } else {
+            returnEndDate = currentYear + '-' + returnEndDate
+        }
+        returnDate = currentYear + '-' + returnDate
+        if (dateRangeStartsNow && !timeRangeExtracted) {
+            const currentDate = new Date()
+            const currentTimeInMinutes = currentDate.getHours() * 60 + currentDate.getMinutes()
+            const startsExplicitlyNow = /^now\b/i.test(extractedtext)
+            returnTime = formatMinutesAsTime(startsExplicitlyNow ? currentTimeInMinutes : (startTime ?? currentTimeInMinutes))
+            returnEndTime = "00:00"
+            timeRangeExtracted = true
+        }
+    }
+    returnTitle = returnTitle.replace(extractedtext, "").replace(/\s+/g, " ").trim();
+
+    //TODO: combine an end time and date (3pm aug 30 or aug 30 3pm)
+
+    //try time range
+    if (dateRangeInProgress || /\b(?:to|until|till|up to)\b|-/i.test(returnTitle)) rangeInProgress = true
     const timePattern = String.raw`(?:(?:0?[1-9]|1[0-2])(?:[.:][0-5]\d)?\s*[ap](?:\.?m\.?)|(?:[01]?\d|2[0-3])(?:[.:][0-5]\d)?)`
     const timeRangePattern = new RegExp(String.raw`(?:from\s+)?(?:at\s+)?(?<!\w)(${timePattern})\s*(?:-|to|until|till|up to)\s*(${timePattern})(?!\w)`, "i")
     const malformedTimeRangePattern = /(?:(?<!\w)(?:0|1[3-9]|2[0-3])(?:[.:][0-5]\d)?\s*[ap](?:\.?m\.?)(?!\w)\s*(?:-|to|until|till|up to)|(?:-|to|until|till|up to)\s*(?<!\w)(?:0|1[3-9]|2[0-3])(?:[.:][0-5]\d)?\s*[ap](?:\.?m\.?)(?!\w))/i
-    const timeRangeRejected = malformedTimeRangePattern.test(title)
-    const timeRangeMatch = timeRangeRejected ? null : title.match(timeRangePattern)
+    const timeRangeRejected = malformedTimeRangePattern.test(returnTitle)
+    const timeRangeMatch = timeRangeRejected || dateRangeInProgress ? null : returnTitle.match(timeRangePattern)
     const nowToTimePattern = new RegExp(String.raw`(?:\b(?:until|till)\s+|\bnow\s+to\s+)(${timePattern})(?![\w:])`, "i")
-    const nowToTimeMatch = title.match(nowToTimePattern)
+    const nowToTimeMatch = returnTitle.match(nowToTimePattern)
     if (nowToTimeMatch && !timeRangeMatch) {
         const currentDate = new Date()
         const parsedEndTime = parseRangeTime(nowToTimeMatch[1])
@@ -259,43 +297,16 @@ export const simpleTimeLocationExtractor = (title: string, timeModified: boolean
         returnEndTime = formatMinutesAsTime(endTimeMinutes)
         returnTitle = returnTitle.replace(timeRangeMatch[0], "").replace(/\s+/g, " ").trim();
     }
-    //try date range
-    let extractedtext = "";
-    let dateRangeStartsNow = false;
-    const extractedDates = extractDates(title, selectedStartDate)
-    if (extractedDates) {
-        [returnDate, returnEndDate, extractedtext, dateRangeStartsNow] = extractedDates
-    }
-    const currentYear = new Date().getFullYear() //TODO: eventually depend on clicked date's year, not current year
-    if (returnDate !== "" && returnEndDate !== "") {
-        if (returnEndDate < returnDate) { //end before start? prob extending into next year
-            returnEndDate = currentYear + 1 + '-' + returnEndDate
-        } else {
-            returnEndDate = currentYear + '-' + returnEndDate
-        }
-        returnDate = currentYear + '-' + returnDate
-        if (dateRangeStartsNow && !timeRangeExtracted) {
-            const currentDate = new Date()
-            const currentTimeInMinutes = currentDate.getHours() * 60 + currentDate.getMinutes()
-            const startsExplicitlyNow = /^now\b/i.test(extractedtext)
-            returnTime = formatMinutesAsTime(startsExplicitlyNow ? currentTimeInMinutes : (startTime ?? currentTimeInMinutes))
-            returnEndTime = "00:00"
-            timeRangeExtracted = true
-        }
-    }
-    returnTitle = returnTitle.replace(extractedtext, "").replace(/\s+/g, " ").trim();
-
-    //TODO: combine an end time and date (3pm aug 30 or aug 30 3pm)
     //try 1 time only
-    if (!timeModified && !timeRangeExtracted && !timeRangeRejected) {
-        if ((/\bnoon\b/i).test(title) || (/\bmidnight\b/i).test(title)) {
-            if ((/\bnoon\b/i).test(title) && !(/\bmidnight\b/i).test(title)) {
+    if (!timeModified && !timeRangeExtracted && !timeRangeRejected && !dateRangeExtracted && !dateRangeInProgress) {
+        if ((/\bnoon\b/i).test(returnTitle) || (/\bmidnight\b/i).test(returnTitle)) {
+            if ((/\bnoon\b/i).test(returnTitle) && !(/\bmidnight\b/i).test(returnTitle)) {
                 returnTime = "12:00";
                 returnTitle = returnTitle
                     .replace(/(?:\bat\s*|@\s*)?\bnoon\b/i, "")
                     .replace(/\s+/g, " ")
                     .trim();
-            } else if (!(/\bnoon\b/i).test(title) && (/\bmidnight\b/i).test(title)) {
+            } else if (!(/\bnoon\b/i).test(returnTitle) && (/\bmidnight\b/i).test(returnTitle)) {
                 returnTime = "00:00";
                 returnTitle = returnTitle
                     .replace(/(?:\bat\s*|@\s*)?\bmidnight\b/i, "")
@@ -308,7 +319,7 @@ export const simpleTimeLocationExtractor = (title: string, timeModified: boolean
             //find 12h time format
             let foundtime = false
 
-            const twelveHourTime = title.match(
+            const twelveHourTime = returnTitle.match(
                 /(?:\bat\s*|@\s*)?\b(0?[1-9]|1[0-2])(?:[.:]([0-5][0-9]))?\s*(am|pm)\b/i
             );
             if (twelveHourTime) {
@@ -331,7 +342,7 @@ export const simpleTimeLocationExtractor = (title: string, timeModified: boolean
 
             } //try searching for 24h time format without explicit am/pm
             if (!foundtime) {
-                const twentyFourHourTime = title.match(
+                const twentyFourHourTime = returnTitle.match(
                     /\b((1[3-9]|2[0-3]):([0-5][0-9]))\b|(?:\bat|@)\s*(1[3-9]|2[0-3])(?::([0-5][0-9]))?\b/i);
                 if (twentyFourHourTime) {
                     const matchedText = twentyFourHourTime[0];//remove matched text from title
@@ -354,7 +365,7 @@ export const simpleTimeLocationExtractor = (title: string, timeModified: boolean
                     returnTime = String(hour).padStart(2, "0") + ":" + minute;
 
                 } else {
-                    const lastTimeAttempt = title.match(
+                    const lastTimeAttempt = returnTitle.match(
                         /\b((@?0?\d|1[0-2]):([0-5][0-9])|(at|@)\s?(0?\d|1[0-2]))\b/i);
                     //TODO: prompt user with pop up to select am/pm or cancel
                     //found time, but unsure of the time (am/pm)
