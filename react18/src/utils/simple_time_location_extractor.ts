@@ -157,6 +157,13 @@ function extractDates(title: string, selectedStartDate?: string): [string, strin
     const dateRangePattern = new RegExp(String.raw`(?:from\s+)?(?:${dateEndpointPattern}\s*(?:-|to|until|through|till|up to)\s*${dateEndpointPattern}|([a-z]{2,9})\.?(?![a-z])\s*(0?[1-9]|[12]\d|3[01])(?!\d)\s*-\s*(0?[1-9]|[12]\d|3[01])(?!\d)|(0?[1-9]|[12]\d|3[01])(?!\d)\s*-\s*(0?[1-9]|[12]\d|3[01])(?!\d)\s*([a-z]{2,9})\.?(?![a-z]))`, "i");
     const dateRangeMatch = title.match(dateRangePattern);
     if (dateRangeMatch) {
+        /*
+          daterangematch index:
+          0: full string. ||| 1: "sept" in " sept 30 - oct 2". ||| 2: "30" in the prev string. ||| 3. "30" in "30 sept - 2 oct"
+          4: "sept" in the prev string. ||| 5: whether "now" is captured and replaces one end of a date range
+          6: range's end for 1. ||| 7: range's end for 2. ||| 8,9,10, end range versions of 3,4,5.
+          11: "sept" in "sept 3-8" ||| 12, 13: "3" and "8" ||| 14:undefined in the case of "sept 3-8". if "3-8sept", "3", 15-> 8, 16 -> sept
+        */
         const start = normalizeDateInput(dateRangeMatch[1], dateRangeMatch[2], dateRangeMatch[3], dateRangeMatch[4], dateRangeMatch[5], dateRangeMatch[11], dateRangeMatch[16], dateRangeMatch[12], dateRangeMatch[14])
         const end = normalizeDateInput(dateRangeMatch[6], dateRangeMatch[7], dateRangeMatch[8], dateRangeMatch[9], dateRangeMatch[10], dateRangeMatch[11], dateRangeMatch[16], dateRangeMatch[13], dateRangeMatch[15])
         if (!start || !end) return // no actual months found
@@ -199,8 +206,7 @@ function extractDates(title: string, selectedStartDate?: string): [string, strin
 
 }
 
-export const simpleTimeLocationExtractor = (title: string, timeModified: boolean,
-                                            locationModified: boolean, selectedStartDate: string, startTime: number): TitleExtractionResult => {
+export const simpleTimeLocationExtractor = (title: string, selectedStartDate: string, startTime: number): TitleExtractionResult => {
     let rangeInProgress = false
     let returnTime = ""
     let returnEndTime = ""
@@ -213,8 +219,7 @@ export const simpleTimeLocationExtractor = (title: string, timeModified: boolean
     let dateRangeInProgress = false
     let requiresConfirmation = false
 
-
-    //try date range
+    //try date range————————————————————————————————————————————————————————————————————————————————————————
     let extractedtext = "";
     let dateRangeStartsNow = false;
     const extractedDates = extractDates(title, selectedStartDate)
@@ -222,8 +227,7 @@ export const simpleTimeLocationExtractor = (title: string, timeModified: boolean
         [returnDate, returnEndDate, extractedtext, dateRangeStartsNow] = extractedDates
         dateRangeExtracted = true
     }
-    const dateRangeInProgressMatch = title.match(
-        /(?<![a-z])([a-z]{2,9})\.?(?![a-z])\s*(0?[1-9]|[12]\d|3[01])(?!\d)\s*-\s*\d{0,2}(?!\d)/i
+    const dateRangeInProgressMatch = title.match(/(?<![a-z])([a-z]{2,9})\.?(?![a-z])\s*(0?[1-9]|[12]\d|3[01])(?!\d)\s*-\s*\d{0,2}(?!\d)/i
     )
     if (!dateRangeExtracted && dateRangeInProgressMatch) {
         const possibleMonth = MONTH_ALIASES.get(dateRangeInProgressMatch[1].toLowerCase())
@@ -240,9 +244,7 @@ export const simpleTimeLocationExtractor = (title: string, timeModified: boolean
     }
     returnTitle = returnTitle.replace(extractedtext, "").replace(/\s+/g, " ").trim();
 
-    //TODO: combine an end time and date (3pm aug 30 or aug 30 3pm)
-
-    //try time range
+    //try time range—————————————————————————————————————————————————————————————————————————————————————————
     if (dateRangeInProgress || /\b(?:to|until|till|up to)\b|-/i.test(returnTitle)) rangeInProgress = true
     const timePattern = String.raw`(?:(?:0?[1-9]|1[0-2])(?:[.:][0-5]\d)?\s*[ap](?:\.?m\.?)|(?:[01]?\d|2[0-3])(?:[.:][0-5]\d)?)`
     const timeRangePattern = new RegExp(String.raw`(?:from\s+)?(?:at\s+)?(?<!\w)(${timePattern})\s*(?:-|to|until|till|up to)\s*(${timePattern})(?!\w)`, "i")
@@ -296,8 +298,8 @@ export const simpleTimeLocationExtractor = (title: string, timeModified: boolean
         returnEndTime = "00:00"
         timeRangeExtracted = true
     }
-    //try 1 time only
-    if (!timeModified && !timeRangeExtracted && !timeRangeRejected && !dateRangeExtracted && !dateRangeInProgress) {
+    //try 1 time only————————————————————————————————————————————————————————————————————————————————————————————————
+    if (!timeRangeExtracted && !timeRangeRejected && !dateRangeExtracted && !dateRangeInProgress) {
         if ((/\bnoon\b/i).test(returnTitle) || (/\bmidnight\b/i).test(returnTitle)) {
             if ((/\bnoon\b/i).test(returnTitle) && !(/\bmidnight\b/i).test(returnTitle)) {
                 returnTime = "12:00";
@@ -375,9 +377,9 @@ export const simpleTimeLocationExtractor = (title: string, timeModified: boolean
         }
 
     }
-    if (!locationModified) {
-        //TODO
-    }
+
+    //TODO: location?
+
     return {
         returnTitle,
         startDate: returnDate,

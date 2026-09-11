@@ -594,7 +594,7 @@ export default function Popup({
                                 setTitle(input);
                                 //temporarily disable time modification detection
                                 const startTimeModified = false
-                                handleTitleInputChange(simpleTimeLocationExtractor(input, startTimeModified, locationModified, selectedStartDate, startTime))
+                                handleTitleInputChange(simpleTimeLocationExtractor(input, selectedStartDate, startTime))
                             }}
                         />
                         <div className="form-row">
