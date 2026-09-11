@@ -214,7 +214,6 @@ export const simpleTimeLocationExtractor = (title: string, timeModified: boolean
     let requiresConfirmation = false
 
 
-
     //try date range
     let extractedtext = "";
     let dateRangeStartsNow = false;
@@ -238,14 +237,6 @@ export const simpleTimeLocationExtractor = (title: string, timeModified: boolean
             returnEndDate = currentYear + '-' + returnEndDate
         }
         returnDate = currentYear + '-' + returnDate
-        if (dateRangeStartsNow && !timeRangeExtracted) {
-            const currentDate = new Date()
-            const currentTimeInMinutes = currentDate.getHours() * 60 + currentDate.getMinutes()
-            const startsExplicitlyNow = /^now\b/i.test(extractedtext)
-            returnTime = formatMinutesAsTime(startsExplicitlyNow ? currentTimeInMinutes : (startTime ?? currentTimeInMinutes))
-            returnEndTime = "00:00"
-            timeRangeExtracted = true
-        }
     }
     returnTitle = returnTitle.replace(extractedtext, "").replace(/\s+/g, " ").trim();
 
@@ -296,6 +287,14 @@ export const simpleTimeLocationExtractor = (title: string, timeModified: boolean
         returnTime = formatMinutesAsTime(startTimeMinutes)
         returnEndTime = formatMinutesAsTime(endTimeMinutes)
         returnTitle = returnTitle.replace(timeRangeMatch[0], "").replace(/\s+/g, " ").trim();
+    }
+    if (dateRangeStartsNow && !timeRangeExtracted) {
+        const currentDate = new Date()
+        const currentTimeInMinutes = currentDate.getHours() * 60 + currentDate.getMinutes()
+        const startsExplicitlyNow = /^now\b/i.test(extractedtext)
+        returnTime = formatMinutesAsTime(startsExplicitlyNow ? currentTimeInMinutes : (startTime ?? currentTimeInMinutes))
+        returnEndTime = "00:00"
+        timeRangeExtracted = true
     }
     //try 1 time only
     if (!timeModified && !timeRangeExtracted && !timeRangeRejected && !dateRangeExtracted && !dateRangeInProgress) {
