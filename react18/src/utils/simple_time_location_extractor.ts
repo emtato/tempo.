@@ -94,12 +94,16 @@ interface ParsedDateEndpoint {
     isNow: boolean
 }
 
-// since sept 30 or 30 sept work, input params: sept 30: monthfirst_month = sept. monthfirst_day = 30. others are undef
+// since sept 30 or 30 sept work, input params: sept 30: monthfirst_month = sept. monthfirst_day = 30. others are undef. single -> month only appears once (sept 3-8)
 function normalizeDateInput(monthFirst_Month: string | undefined,
                             monthFirst_Day: string | undefined,
                             dayFirst_Day: string | undefined,
                             dayFirst_Month: string | undefined,
-                            now: string | undefined): ParsedDateEndpoint | undefined {
+                            now: string | undefined,
+                            monthFirst_single?: string | undefined,
+                            monthLast_single?: string | undefined,
+                            monthFirst_single_date?: string | undefined,
+                            monthLast_single_date?: string | undefined): ParsedDateEndpoint | undefined {
     if (now) {
         const currentDate = new Date()
         return {
@@ -112,11 +116,33 @@ function normalizeDateInput(monthFirst_Month: string | undefined,
     //Put both "Sep 30" and "30 Sep" back into the month/day order used by the rest of the extractor.
     const monthText = (monthFirst_Month ?? dayFirst_Month)?.toLowerCase()
     const dayText = monthFirst_Day ?? dayFirst_Day
-    if (!monthText || !dayText) return
 
-    const month = MONTH_ALIASES.get(monthText)
+
+    if (monthFirst_single || monthLast_single) {
+        //date range match: only one month format
+        if (monthFirst_single) {
+            let month = MONTH_ALIASES.get(monthFirst_single)
+            if (month === undefined || month === 0) return
+
+            return {
+                month,
+                day: Number(monthFirst_single_date),
+                isNow: false
+            }
+        } else if(monthLast_single) {
+             let month = MONTH_ALIASES.get(monthLast_single)
+            if (month === undefined || month === 0) return
+            return {
+                month,
+                day: Number(monthLast_single_date),
+                isNow: false
+            }
+        }
+    }
+ if (!monthText || !dayText) return
+
+    let month = MONTH_ALIASES.get(monthText)
     if (month === undefined || month === 0) return
-
     return {
         month,
         day: Number(dayText),
@@ -128,11 +154,11 @@ function extractDates(title: string, selectedStartDate?: string): [string, strin
     //actual month strings are checked after matching, so this only scans for possible month-word lengths
     //Each endpoint has five captures: month/day, day/month, or now.
     const dateEndpointPattern = String.raw`(?:(?!now\b)(?:([a-z]{2,9})\.?(?![a-z])\s*(0?[1-9]|[12]\d|3[01])(?!\d)|(0?[1-9]|[12]\d|3[01])(?!\d)\s*([a-z]{2,9})\.?(?![a-z]))|(\bnow\b))`;
-    const dateRangePattern = new RegExp(String.raw`(?:from\s+)?${dateEndpointPattern}\s*(?:-|to|until|through|till|up to)\s*${dateEndpointPattern}`, "i");
+    const dateRangePattern = new RegExp(String.raw`(?:from\s+)?(?:${dateEndpointPattern}\s*(?:-|to|until|through|till|up to)\s*${dateEndpointPattern}|([a-z]{2,9})\.?(?![a-z])\s*(0?[1-9]|[12]\d|3[01])(?!\d)\s*-\s*(0?[1-9]|[12]\d|3[01])(?!\d)|(0?[1-9]|[12]\d|3[01])(?!\d)\s*-\s*(0?[1-9]|[12]\d|3[01])(?!\d)\s*([a-z]{2,9})\.?(?![a-z]))`, "i");
     const dateRangeMatch = title.match(dateRangePattern);
     if (dateRangeMatch) {
-        const start = normalizeDateInput(dateRangeMatch[1], dateRangeMatch[2], dateRangeMatch[3], dateRangeMatch[4], dateRangeMatch[5])
-        const end = normalizeDateInput(dateRangeMatch[6], dateRangeMatch[7], dateRangeMatch[8], dateRangeMatch[9], dateRangeMatch[10])
+        const start = normalizeDateInput(dateRangeMatch[1], dateRangeMatch[2], dateRangeMatch[3], dateRangeMatch[4], dateRangeMatch[5], dateRangeMatch[11], dateRangeMatch[16], dateRangeMatch[12], dateRangeMatch[14])
+        const end = normalizeDateInput(dateRangeMatch[6], dateRangeMatch[7], dateRangeMatch[8], dateRangeMatch[9], dateRangeMatch[10], dateRangeMatch[11], dateRangeMatch[16], dateRangeMatch[13], dateRangeMatch[15])
         if (!start || !end) return // no actual months found
 
         const startMonth = start.month
