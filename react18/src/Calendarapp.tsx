@@ -961,6 +961,7 @@ export default function CalendarApp() {
             //TODO popup error?
         }
     }
+    //TODO: event drag end or start time doesnt save new time
 
     if (isPending) {
         return <div className="app loading-container">

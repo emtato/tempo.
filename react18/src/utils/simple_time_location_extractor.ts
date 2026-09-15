@@ -197,13 +197,12 @@ function extractDates(title: string, selectedStartDate?: string): [string, strin
             date = new Date()
         } else { //until interpreted as "this event's starting time to specified end time"
             date = new Date(selectedStartDate + "T00:00:00")
-        } //TODO: fix time issue of "until" for month view: until date sets starttime to current time
+        }
 
         const startDate = String(date.getMonth() + 1).padStart(2, "0") + "-" + String(date.getDate()).padStart(2, "0")
         const endDate = String(end.month).padStart(2, "0") + "-" + String(end.day).padStart(2, "0")
-        return [startDate, endDate, untilDateMatch[0], true]
+        return [startDate, endDate, untilDateMatch[0], false]
     }
-
 }
 
 export const simpleTimeLocationExtractor = (title: string, selectedStartDate: string, startTime: number): TitleExtractionResult => {
@@ -299,7 +298,7 @@ export const simpleTimeLocationExtractor = (title: string, selectedStartDate: st
         timeRangeExtracted = true
     }
     //try 1 time only————————————————————————————————————————————————————————————————————————————————————————————————
-    if (!timeRangeExtracted && !timeRangeRejected && !dateRangeExtracted && !dateRangeInProgress) {
+    if (!timeRangeExtracted && !timeRangeRejected) {
         if ((/\bnoon\b/i).test(returnTitle) || (/\bmidnight\b/i).test(returnTitle)) {
             if ((/\bnoon\b/i).test(returnTitle) && !(/\bmidnight\b/i).test(returnTitle)) {
                 returnTime = "12:00";
