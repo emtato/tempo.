@@ -99,21 +99,30 @@ function normalizeDateInput(monthFirst_Month: string | undefined,
                             monthFirst_Day: string | undefined,
                             dayFirst_Day: string | undefined,
                             dayFirst_Month: string | undefined,
-                            now: string | undefined,
+                            relativeTimeIndicator: string | undefined,
                             monthFirst_single?: string | undefined,
                             monthLast_single?: string | undefined,
                             monthFirst_single_date?: string | undefined,
                             monthLast_single_date?: string | undefined): ParsedDateEndpoint | undefined {
-    if (now) {
+    if (relativeTimeIndicator) {
         const currentDate = new Date()
+        let isNow = false;
+        const relativeDate = relativeTimeIndicator.toLowerCase()
+        if (relativeDate == "before yesterday") currentDate.setDate(currentDate.getDate() - 2);
+        else if (relativeDate == "yesterday") currentDate.setDate(currentDate.getDate() - 1);
+        else if (relativeDate == "today") currentDate.setDate(currentDate.getDate());
+        else if (relativeDate == "tomorrow") currentDate.setDate(currentDate.getDate() + 1);
+        else if (relativeDate == "after tomorrow") currentDate.setDate(currentDate.getDate() + 2);
+
+        else if (relativeDate == "now") isNow = true
         return {
             month: currentDate.getMonth() + 1,
             day: currentDate.getDate(),
-            isNow: true
+            isNow: isNow
         }
     }
 
-    //Put both "Sep 30" and "30 Sep" back into the month/day order used by the rest of the extractor.
+//Put both "Sep 30" and "30 Sep" back into the month/day order used by the rest of the extractor.
     const monthText = (monthFirst_Month ?? dayFirst_Month)?.toLowerCase()
     const dayText = monthFirst_Day ?? dayFirst_Day
 
@@ -153,14 +162,14 @@ function normalizeDateInput(monthFirst_Month: string | undefined,
 function extractDates(title: string, selectedStartDate?: string): [string, string, string, boolean] | undefined {
     //actual month strings are checked after matching, so this only scans for possible month-word lengths
     //Each endpoint has five captures: month/day, day/month, or now.
-    const dateEndpointPattern = String.raw`(?:(?!now\b)(?:([a-z]{2,9})\.?(?![a-z])\s*(0?[1-9]|[12]\d|3[01])(?!\d)|(0?[1-9]|[12]\d|3[01])(?!\d)\s*([a-z]{2,9})\.?(?![a-z]))|(\bnow\b))`;
+    const dateEndpointPattern = String.raw`(?:(?!now\b)(?:([a-z]{2,9})\.?(?![a-z])\s*(0?[1-9]|[12]\d|3[01])(?!\d)|(0?[1-9]|[12]\d|3[01])(?!\d)\s*([a-z]{2,9})\.?(?![a-z]))|(\b(?:now|today|yesterday|tomorrow|before yesterday|after tomorrow)\b))`;
     const dateRangePattern = new RegExp(String.raw`(?:from\s+)?(?:${dateEndpointPattern}\s*(?:-|to|until|through|till|up to)\s*${dateEndpointPattern}|([a-z]{2,9})\.?(?![a-z])\s*(0?[1-9]|[12]\d|3[01])(?!\d)\s*-\s*(0?[1-9]|[12]\d|3[01])(?!\d)|(0?[1-9]|[12]\d|3[01])(?!\d)\s*-\s*(0?[1-9]|[12]\d|3[01])(?!\d)\s*([a-z]{2,9})\.?(?![a-z]))`, "i");
     const dateRangeMatch = title.match(dateRangePattern);
     if (dateRangeMatch) {
         /*
           daterangematch index:
           0: full string. ||| 1: "sept" in " sept 30 - oct 2". ||| 2: "30" in the prev string. ||| 3. "30" in "30 sept - 2 oct"
-          4: "sept" in the prev string. ||| 5: whether "now" is captured and replaces one end of a date range
+          4: "sept" in the prev string. ||| 5: whether "now"/other relative time ends is captured and replaces one end of a date range
           6: range's end for 1. ||| 7: range's end for 2. ||| 8,9,10, end range versions of 3,4,5.
           11: "sept" in "sept 3-8" ||| 12, 13: "3" and "8" ||| 14:undefined in the case of "sept 3-8". if "3-8sept", "3", 15-> 8, 16 -> sept
         */
@@ -205,6 +214,7 @@ function extractDates(title: string, selectedStartDate?: string): [string, strin
     }
 }
 
+//TODO: yesterday, tyda, tomorrow, before yesterday, after tomorrow.
 export const simpleTimeLocationExtractor = (title: string, selectedStartDate: string, startTime: number): TitleExtractionResult => {
     let rangeInProgress = false
     let returnTime = ""
