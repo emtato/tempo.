@@ -17,7 +17,8 @@
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "express-rate-limit": "^8.6.2",
-    "mongodb": "^7.5.0"
+    "mongodb": "^7.5.0",
+    "temporal-polyfill": "^1.0.5"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

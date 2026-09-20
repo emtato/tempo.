@@ -21,12 +21,34 @@ export const eventStorage = {
 
 const storageCollection = "events3";
 
-async function getEvents(startDate: string, endDate: string, userId: any): Promise<CalendarEvent[]> {
+async function getEvents(startDate: string, endDate: string, userId: any): Promise<{
+    normalEvents: CalendarEvent[]; repetitionEvents: CalendarEvent[];
+}> {
     const db = await getDatabase();
     const eventsCollection = db.collection<CalendarEvent>(storageCollection);
 
-    return eventsCollection.find({start: {$lt: endDate}, end: {$gt: startDate}, userId: userId}).toArray();
+    const normalEventsPromise = eventsCollection.find({
+        start: {$lt: endDate},
+        end: {$gt: startDate},
+        userId: userId,
+        "extendedProps.recurrence": {$exists: false}
+    }).toArray();
     // any event end date that extends into the startDate range and any event start date that happens before endDate
+
+    const repetitionEventsPromise = eventsCollection.find({
+        userId,
+        "extendedProps.recurrence.startDate": {$lt: endDate},
+        $or: [{"extendedProps.recurrence.endDate": {$exists: false}},
+            {"extendedProps.recurrence.endDate": {$gte: startDate}}]
+    }).toArray()
+    //if end field exists, recurrence end should end after start date
+
+    const [normalEvents, repetitionEvents] = await Promise.all([
+        normalEventsPromise,
+        repetitionEventsPromise,
+    ]) //wait until fetch done onboth
+
+    return {normalEvents, repetitionEvents}
 }
 
 async function saveEvent(event: CalendarEvent) {

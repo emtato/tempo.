@@ -14,6 +14,7 @@
 import {CalendarEvent, SaveCalendarEventInput,} from "../domain/calendar-event.js";
 import {eventStorage} from "../repositories/event.storage.js";
 import {randomUUID} from "node:crypto";
+import {Temporal} from 'temporal-polyfill'
 
 async function saveEvent(input: SaveCalendarEventInput, userId: any): Promise<CalendarEvent> {
     //TODO: gemini first pass layer to extract advanced location/time data first
@@ -41,7 +42,17 @@ async function restoreEvent(input: SaveCalendarEventInput, userId: any): Promise
 }
 
 async function getEvents(start: string, end: string, userId: any): Promise<CalendarEvent[]> {
-    return eventStorage.getEvents(start, end, userId)
+    const eventList = eventStorage.getEvents(start, end, userId)
+    const allEvents = eventList[0]
+    const repetitionEventList = eventList[1]
+    for (let i = 0; i < repetitionEventList.length; i++) {
+        const event = repetitionEventList[i]
+        const recurrence = event.extendedProps.recurrence
+        const startDate = recurrence.startDate
+        const endDate = recurrence.endDate
+
+    }
+    return allEvents
 
 }
 
@@ -96,3 +107,9 @@ function addOneDay(date: string): string {
 export const calendarService = {
     saveEvent, getEvents, deleteEvent, restoreEvent
 };
+
+// RECURRENCE sorry for yelling functions
+function expandRecurrence(rule, requestedStart, requestedEnd): Temporal.PlainDate[] {
+
+    return null
+}
