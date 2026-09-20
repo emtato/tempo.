@@ -61,6 +61,7 @@ export interface DeletedEvent {
         location: string
         description: string
         guests: string
+        recurrence?: recurrence
     }
 }
 
@@ -813,6 +814,7 @@ export default function CalendarApp() {
                     location: event.event.extendedProps.location,
                     description: event.event.extendedProps.description,
                     guests: event.event.extendedProps.guests,
+                    recurrence: event.event.extendedProps.recurrence,
                 }
             };
         } else { //panic
@@ -968,13 +970,13 @@ export default function CalendarApp() {
 
     async function handleEventDrop(dropInfo: EventDropInfo) {
         const updatedEvent = convertToCalendarEvent(dropInfo)
-        await saveCalendarEvent(updatedEvent, userId, dropInfo.event.extendedProps.recurrence)
+        await saveCalendarEvent(updatedEvent, userId)
         refreshCalendar(); //refresh calendar events
     }
 
     async function handleEventResize(resizeInfo: EventResizeDoneInfo) {
         const updatedEvent = convertToCalendarEvent(resizeInfo)
-        await saveCalendarEvent(updatedEvent, userId, resizeInfo.event.extendedProps.recurrence)
+        await saveCalendarEvent(updatedEvent, userId)
         refreshCalendar(); //refresh calendar events
     }
 

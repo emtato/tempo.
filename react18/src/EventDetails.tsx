@@ -464,10 +464,11 @@ export default function Popup({
                 location: location,
                 description: description,
                 guests: guests,
+                recurrence: repetitionObject
             }
         }
         const userID = user ? user.id : DEMO_USER_ID
-        await saveCalendarEvent(event, userID, repetitionObject)
+        await saveCalendarEvent(event, userID)
         onEventsChanged(); //refresh calendar events
         closePopup()
     }
@@ -485,6 +486,7 @@ export default function Popup({
                 location: location,
                 description: description,
                 guests: guests,
+                recurrence: repetitionObject
             }
         }
         deleteEvent(event)
