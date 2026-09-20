@@ -1,8 +1,15 @@
-import FullCalendar, {EventDropInfo} from '@fullcalendar/react'
 import type {
-    CalendarApi, CalendarOptions, CalendarRef, DateClickInfo, DateSelectInfo, EventClickInfo, EventDisplayInfo,
-    EventSourceFuncInfo, SingleMonthInfo,
+    CalendarApi,
+    CalendarOptions,
+    CalendarRef,
+    DateClickInfo,
+    DateSelectInfo,
+    EventClickInfo,
+    EventDisplayInfo,
+    EventSourceFuncInfo,
+    SingleMonthInfo,
 } from '@fullcalendar/react'
+import FullCalendar, {EventDropInfo, EventResizeDoneInfo} from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/react/daygrid'
 import themePlugin from '@fullcalendar/react/themes/monarch'
 import '@fullcalendar/react/themes/monarch/theme.css'
@@ -12,15 +19,14 @@ import interactionPlugin from '@fullcalendar/react/interaction'
 import timeGridPlugin from '@fullcalendar/react/timegrid'
 import multiMonthPlugin from '@fullcalendar/react/multimonth'
 import {Temporal} from 'temporal-polyfill'
+import type {TransitionEvent} from 'react'
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import Popup, {MinimizedBar, Sidebar} from './EventDetails'
-import {DEMO_USER_ID, deleteCalendarEvent, getCalendarEvents, restoreEvent, saveCalendarEvent} from './api/eventsAPI'
-import type {TransitionEvent} from 'react'
+import {deleteCalendarEvent, DEMO_USER_ID, getCalendarEvents, restoreEvent, saveCalendarEvent} from './api/eventsAPI'
 import AuthOverlay from "./components/AuthOverlay";
 import {authClient} from "./api/auth-client";
 import {UserMenu} from "./components/user/UserMenu";
 import {Simulate} from "react-dom/test-utils";
-import drop = Simulate.drop;
 import {SaveCalendarEventInput} from "../../backend/src/domain/calendar-event";
 import {recurrence} from "../../backend/src/domain/recurrence";
 
@@ -785,6 +791,34 @@ export default function CalendarApp() {
     // ------------------------------------------------
     // FullCalendar click/drag selection, popup hydration, and dropped event persistence
     // ------------------------------------------------
+    function convertToCalendarEvent(event: EventResizeDoneInfo | EventDropInfo): SaveCalendarEventInput {
+        const eventId = event.event.id
+        const rangeStart = event.event.start;
+        const rangeEnd = event.event.end;
+        if (rangeStart && rangeEnd) { // true unless error since every event has a start and end, and thus dropped/resize position also does
+
+            const startDate = toLocalDateString(rangeStart)
+            const endDate = toLocalDateString(rangeEnd)
+            const startTime = rangeStart.getHours() * 60 + rangeStart.getMinutes()
+            const endTime = rangeEnd.getHours() * 60 + rangeEnd.getMinutes()
+            return {
+                id: eventId,
+                title: event.event.title,
+                startDate: startDate,
+                endDate: endDate,
+                startTime: startTime,
+                endTime: endTime,
+                allDay: event.event.allDay,
+                extendedProps: {
+                    location: event.event.extendedProps.location,
+                    description: event.event.extendedProps.description,
+                    guests: event.event.extendedProps.guests,
+                }
+            };
+        } else { //panic
+            throw new Error("Cannot convert event without a start and end")
+        }
+    }
 
     function handleDateClick(clickInfo: DateClickInfo) {
         if (justDragged.current) {
@@ -933,35 +967,16 @@ export default function CalendarApp() {
     }
 
     async function handleEventDrop(dropInfo: EventDropInfo) {
-        const eventId = dropInfo.event.id
-        const rangeStart = dropInfo.event.start;
-        const rangeEnd = dropInfo.event.end;
-        if (rangeStart && rangeEnd) { // true unless error since every event has a start and end, and thus dropped position also does
-            const startDate = toLocalDateString(rangeStart)
-            const endDate = toLocalDateString(rangeEnd)
-            const startTime = rangeStart.getHours() * 60 + rangeStart.getMinutes()
-            const endTime = rangeEnd.getHours() * 60 + rangeEnd.getMinutes()
-            const updatedEvent: SaveCalendarEventInput = {
-                id: eventId,
-                title: dropInfo.event.title,
-                startDate: startDate,
-                endDate: endDate,
-                startTime: startTime,
-                endTime: endTime,
-                allDay: dropInfo.event.allDay,
-                extendedProps: {
-                    location: dropInfo.event.extendedProps.location,
-                    description: dropInfo.event.extendedProps.description,
-                    guests: dropInfo.event.extendedProps.guests,
-                }
-            }
-            await saveCalendarEvent(updatedEvent, userId, dropInfo.event.extendedProps.recurrence)
-            refreshCalendar(); //refresh calendar events
-        } else { //panic
-            //TODO popup error?
-        }
+        const updatedEvent = convertToCalendarEvent(dropInfo)
+        await saveCalendarEvent(updatedEvent, userId, dropInfo.event.extendedProps.recurrence)
+        refreshCalendar(); //refresh calendar events
     }
-    //TODO: event drag end or start time doesnt save new time
+
+    async function handleEventResize(resizeInfo: EventResizeDoneInfo) {
+        const updatedEvent = convertToCalendarEvent(resizeInfo)
+        await saveCalendarEvent(updatedEvent, userId, resizeInfo.event.extendedProps.recurrence)
+        refreshCalendar(); //refresh calendar events
+    }
 
     if (isPending) {
         return <div className="app loading-container">
@@ -983,7 +998,6 @@ export default function CalendarApp() {
                     views={CALENDAR_VIEWS}
                     buttons={calendarButtons}
                     toolbarElements={calendarToolbarElements}
-                    eventDrop={handleEventDrop}
                     viewDidMount={(viewInfo) => {
                         // ------------------------------------------------
                         // Toolbar DOM setup and visible-month title/range tracking
@@ -1014,7 +1028,10 @@ export default function CalendarApp() {
                         recenterMonthRange(today)
 
                         const updateTitle = () => {
-                            const {activeMonthDate, scrollerBounds} = updateMonthViewportPresentation(scroller)
+                            const {
+                                activeMonthDate,
+                                scrollerBounds
+                            } = updateMonthViewportPresentation(scroller)
 
                             if (activeMonthDate) {
                                 const [year, monthIndex] = activeMonthDate.split('-').map(Number)
@@ -1217,6 +1234,8 @@ export default function CalendarApp() {
                     select={handleDateDrag}
                     eventContent={renderCalendarEventContent}
                     eventClick={handleEventClick}
+                    eventDrop={handleEventDrop}
+                    eventResize={handleEventResize}
                     events={fetchCalendarEvents}
                 />
             </div>
@@ -1280,7 +1299,8 @@ export default function CalendarApp() {
                             sign in
                         </button>
                         <span className="auth-text"> or continue trying the demo.</span>
-                        <br/> <span className="auth-muted-text">(Events are stored locally while logged out)</span>
+                        <br/> <span
+                        className="auth-muted-text">(Events are stored locally while logged out)</span>
                     </div>
                 </div>}
                 {isAuthOpen && <AuthOverlay
