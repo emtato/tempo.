@@ -12,6 +12,7 @@
  * MongoDB calls and Gemini SDK calls; those belong behind their own adapters.
  */
 import {CalendarEvent, SaveCalendarEventInput,} from "../domain/calendar-event.js";
+import {recurrence} from "../domain/recurrence.js";
 import {eventStorage} from "../repositories/event.storage.js";
 import {randomUUID} from "node:crypto";
 import {Temporal} from 'temporal-polyfill'
@@ -42,15 +43,40 @@ async function restoreEvent(input: SaveCalendarEventInput, userId: any): Promise
 }
 
 async function getEvents(start: string, end: string, userId: any): Promise<CalendarEvent[]> {
-    const eventList = eventStorage.getEvents(start, end, userId)
-    const allEvents = eventList[0]
-    const repetitionEventList = eventList[1]
+    const eventLists = await eventStorage.getEvents(start, end, userId)
+    const allEvents = eventLists.normalEvents
+    const repetitionEventList = eventLists.repetitionEvents
     for (let i = 0; i < repetitionEventList.length; i++) {
         const event = repetitionEventList[i]
-        const recurrence = event.extendedProps.recurrence
-        const startDate = recurrence.startDate
-        const endDate = recurrence.endDate
+        if (event.id.search("recurr") != -1) continue; //dont create an evil cycle of mitosing events
+        const eventDuration = Temporal.PlainDate.from(event.start).until(Temporal.PlainDate.from(event.end))
 
+        const datesToPlaceEvents = expandRecurrence(event.extendedProps.recurrence, Temporal.PlainDate.from(start), Temporal.PlainDate.from(end), Temporal.PlainDate.from(event.start))
+        if (datesToPlaceEvents.length != 0) {
+            const rangeContainsOriginalOccurence = Temporal.PlainDate.compare(datesToPlaceEvents[0], Temporal.PlainDate.from(event.start)) == 0
+            for (let j = 0; j < datesToPlaceEvents.length; j++) {
+                let id = "recurr" + event.id;
+
+                if (rangeContainsOriginalOccurence && j == 0) {
+                    id = event.id
+                }
+                const newEvent: CalendarEvent = {
+                    id: id,
+                    start: datesToPlaceEvents[j].toString(),
+                    end: datesToPlaceEvents[j].add(eventDuration).toString(),
+                    userId: userId,
+                    title: event.title,
+                    allDay: event.allDay,
+                    extendedProps: {
+                        location: event.extendedProps.location,
+                        description: event.extendedProps.description,
+                        guests: event.extendedProps.guests,
+                        recurrence: event.extendedProps.recurrence,
+                    }
+                }
+                allEvents.push(newEvent)
+            }
+        }
     }
     return allEvents
 
@@ -109,7 +135,27 @@ export const calendarService = {
 };
 
 // RECURRENCE sorry for yelling functions
-function expandRecurrence(rule, requestedStart, requestedEnd): Temporal.PlainDate[] {
+// Which calendar dates inside this requested range satisfy this rule?
+function expandRecurrence(rule: recurrence, requestedStart: Temporal.PlainDate, requestedEnd: Temporal.PlainDate, originalEventDate: Temporal.PlainDate): Temporal.PlainDate[] {
+    //separate by big branches: frequency
+    const possibleDates = []
+    let stepSize = 1
+    if (rule.frequency == "daily") {
+        //daily rule only has to deal with skipinterval
+        if (rule.skipInterval) stepSize += rule.skipInterval
+        const daysFromRangeStart = originalEventDate.until(requestedStart).days //number of days to REACH start (so inclusive)
+        const jumpsNeeded = Math.max(0, Math.ceil(daysFromRangeStart / stepSize))//reach first occurence wihin range
+        let currentDate = originalEventDate.add({days: jumpsNeeded * stepSize}) //first occurence
+        while (Temporal.PlainDate.compare(currentDate, requestedEnd) < 0) {
+            possibleDates.push(currentDate)
+            currentDate = currentDate.add({days: stepSize})
+        }
+    } else if (rule.frequency == "weekly") {
 
-    return null
+    } else if (rule.frequency == "monthly") {
+
+    } else if (rule.frequency == "yearly") {
+
+    }
+    return possibleDates
 }

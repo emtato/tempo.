@@ -4,7 +4,7 @@ export interface recurrence {
 
     days?: number[] //nº of days after the beginning of the frequency unit: 0 days would be sunday for week, 1st of the month etc.
     skipInterval?: number; //if monthly: (monthly + skipinterval 1: every other month)  if weekly + weekday + skipint 2, every 3rd {weekday}
-    position?: number[] //if positive: selects {position}th occurence of weekday. if negative, go backwards and select that occurence
+    position?: number[] //if positive: selects {position}th occurence of weekday. if negative, go backwards from last and select that occurence
     months?: number[] //if yearly, might need specific months: every march and may
 
     startDate: string //YYYY-MM-DD

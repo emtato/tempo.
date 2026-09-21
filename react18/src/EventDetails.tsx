@@ -440,6 +440,7 @@ export default function Popup({
         setEventID("")
         setAllday(false)
         setEndTimeModified(false);
+        setRepetitionObject(undefined)
         onClose();
     }
 

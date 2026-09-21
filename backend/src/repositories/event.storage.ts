@@ -31,14 +31,14 @@ async function getEvents(startDate: string, endDate: string, userId: any): Promi
         start: {$lt: endDate},
         end: {$gt: startDate},
         userId: userId,
-        "extendedProps.recurrence": {$exists: false}
+        "extendedProps.recurrence": null
     }).toArray();
     // any event end date that extends into the startDate range and any event start date that happens before endDate
 
     const repetitionEventsPromise = eventsCollection.find({
         userId,
         "extendedProps.recurrence.startDate": {$lt: endDate},
-        $or: [{"extendedProps.recurrence.endDate": {$exists: false}},
+        $or: [{"extendedProps.recurrence": null},
             {"extendedProps.recurrence.endDate": {$gte: startDate}}]
     }).toArray()
     //if end field exists, recurrence end should end after start date

@@ -686,6 +686,7 @@ export default function CalendarApp() {
         setSelectedDate('')
         setSelectedEndDate('')
         resetStates()
+
     }
 
     function resetStates() {
@@ -695,6 +696,7 @@ export default function CalendarApp() {
         setAllDay(false)
         setGuests("")
         setLocation("")
+        setRecurrenceRule(undefined)
     }
 
     async function startDeleteTimer(event: DeletedEvent) {
