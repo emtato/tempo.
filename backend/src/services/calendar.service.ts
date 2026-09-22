@@ -61,9 +61,9 @@ async function getEvents(start: string, end: string, userId: any): Promise<Calen
                     id = event.id
                 }
                 const newEvent: CalendarEvent = {
-                    id: id,
-                    start: datesToPlaceEvents[j].toString(),
-                    end: datesToPlaceEvents[j].add(eventDuration).toString(),
+                        id: id,
+                        start: datesToPlaceEvents[j].toString() + "T" + event.start.slice(11),
+                        end: datesToPlaceEvents[j].add(eventDuration).toString() + "T" + event.end.slice(11),
                     userId: userId,
                     title: event.title,
                     allDay: event.allDay,
@@ -73,7 +73,7 @@ async function getEvents(start: string, end: string, userId: any): Promise<Calen
                         guests: event.extendedProps.guests,
                         recurrence: event.extendedProps.recurrence,
                     }
-                }
+            }
                 allEvents.push(newEvent)
             }
         }
