@@ -92,6 +92,7 @@ const DATE_CELL_SELECTOR = '[role="gridcell"][data-date]' //find calendar date c
 const RANGE_MONTHS_PER_SIDE = 12
 const RANGE_RECENTER_THRESHOLD_MONTHS = RANGE_MONTHS_PER_SIDE - 1
 const RANGE_RESTORE_RETRIES = 2
+const FULLCALENDAR_SCROLL_END_DELAY_MS = 550
 const NOOP = () => undefined
 
 // ----------------------------------------------------
@@ -124,6 +125,7 @@ const CALENDAR_VIEWS = {
         },
         dateIncrement: {months: 1},
         aspectRatio: 1.4,
+        scrollTimeReset: false,
         dayNarrowWidth: 0,
         className: 'scrolling-month-measuring',
         tableBodyClass: 'calendar-month-weeks',
@@ -165,6 +167,15 @@ function fromLocalDateString(dateString: string | undefined) { //convert string 
 //retrieve reference of the object: scrollable month week rows. object will have browser properties to know scroll position/etc
 function findMonthScroller(root: ParentNode | null) {
     return root?.querySelector<HTMLElement>(MONTH_SCROLLER_SELECTOR) ?? null
+}
+
+// FullCalendar keeps its initial `scrollDate` until it believes a device scroll
+// has ended. While that value is active, event-row measurement can move the
+// current week to the top. Its listener only requires a wheel/scroll pair;
+// neither event needs to move the viewport or be browser-trusted.
+function releaseFullCalendarInitialScroll(scroller: HTMLElement) {
+    scroller.dispatchEvent(new Event('wheel'))
+    scroller.dispatchEvent(new Event('scroll'))
 }
 
 function setCalendarToolbarTitle(root: ParentNode | null, date: Date) {
@@ -1079,7 +1090,9 @@ export default function CalendarApp() {
                         }
 
                         let scrollEndTimer = 0
+                        let releasingFullCalendarInitialScroll = false
                         const handleScroll = () => {
+                            if (releasingFullCalendarInitialScroll) return
                             window.clearTimeout(scrollEndTimer)
                             if (rangeRecenterInProgressRef.current) {
                                 const pendingAnchor = scrollPositionToRestore.current
@@ -1127,36 +1140,32 @@ export default function CalendarApp() {
                             }, 100)
                         }
 
-                        let alignmentFrame = 0
+                        let alignmentTimer = 0
                         const alignCurrentMonth = () => { //align scroll position upon initialload
-                            window.cancelAnimationFrame(alignmentFrame)
-                            let framesRemaining = 12
+                            window.clearTimeout(alignmentTimer)
+                            releasingFullCalendarInitialScroll = true
+                            releaseFullCalendarInitialScroll(scroller)
 
-                            const align = () => {
+                            alignmentTimer = window.setTimeout(() => {
+                                releasingFullCalendarInitialScroll = false
                                 if (lastCalendarViewRef.current && lastCalendarViewRef.current !== SCROLLING_MONTH_VIEW) return
-                                const rowsAreSized = scrollToMonth(today)
-
-                                if (rowsAreSized) {
-                                    viewInfo.el.classList.remove('scrolling-month-measuring')
-                                }
-                                if (framesRemaining-- > 0) {
-                                    alignmentFrame = window.requestAnimationFrame(align)
-                                } else {
-                                    viewInfo.el.classList.remove('scrolling-month-measuring')
-                                }
-                            }
-                            align()
+                                scrollToMonth(today)
+                                viewInfo.el.classList.remove('scrolling-month-measuring')
+                            }, FULLCALENDAR_SCROLL_END_DELAY_MS)
                         }
                         scroller.addEventListener('scroll', handleScroll, {passive: true})
                         alignMonthViewRef.current = alignCurrentMonth
                         scrollToMonthRef.current = (date, behavior) => {
-                            window.cancelAnimationFrame(alignmentFrame)
+                            window.clearTimeout(alignmentTimer)
+                            releasingFullCalendarInitialScroll = false
+                            viewInfo.el.classList.remove('scrolling-month-measuring')
                             scrollToMonth(date, behavior)
                         }
                         alignCurrentMonth()
 
                         monthScrollCleanupRef.current = () => {
-                            window.cancelAnimationFrame(alignmentFrame)
+                            window.clearTimeout(alignmentTimer)
+                            releasingFullCalendarInitialScroll = false
                             cancelRangeAnchorRestore()
                             window.clearTimeout(arrowTargetTimerRef.current)
                             arrowTargetMonthRef.current = null
