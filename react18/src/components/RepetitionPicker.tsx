@@ -32,7 +32,7 @@ function treatWeekRep(dayOfWeek: number[], other: boolean) {
 }
 
 export function formatOptionsToText(option: recurrence | undefined): string {
-    if (option == undefined) return "Does not repeat"
+    if (option == undefined || option.frequency == "none") return "Does not repeat"
     if (option.frequency == "daily" && Object.keys(option).length === 2) { //only frequency field exists: every day (aside form start date)
         return "Daily"
     }

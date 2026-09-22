@@ -349,10 +349,15 @@ export default function Popup({
 
     function repetitionPicked(option: recurrence) {
         setRepetitionObject(option)
+        if(option.frequency == "none"){
+            setRepetitionObject(undefined)
+        }
     }
 
     function generateRepetitionOptions(): recurrence[] {
         let options: recurrence[] = []
+        const none: recurrence = {frequency: "none", startDate: selectedStartDate}
+        options.push(none)
         const everyDayRecurrence: recurrence = {frequency: "daily", startDate: selectedStartDate}
         options.push(everyDayRecurrence)
         const everyOtherDay: recurrence = {frequency: "daily", skipInterval: 1, startDate: selectedStartDate}
