@@ -39,7 +39,7 @@ async function getEvents(startDate: string, endDate: string, userId: any): Promi
         userId,
         "extendedProps.recurrence.startDate": {$lt: endDate},
         $or: [{"extendedProps.recurrence.endDate": {$exists: false}},
-            {"extendedProps.recurrence.endDate": {$gte: startDate}}]
+            {"extendedProps.recurrence.endDate": {$gt: startDate}}]
     }).toArray()
     //if end field exists, recurrence end should end after start date
 

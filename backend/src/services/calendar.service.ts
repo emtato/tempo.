@@ -55,15 +55,15 @@ async function getEvents(start: string, end: string, userId: any): Promise<Calen
         if (datesToPlaceEvents.length != 0) {
             const rangeContainsOriginalOccurence = Temporal.PlainDate.compare(datesToPlaceEvents[0], Temporal.PlainDate.from(event.start)) == 0
             for (let j = 0; j < datesToPlaceEvents.length; j++) {
-                let id = "recurr" + event.id;
+                let id = "recurr" + event.id + "_" + j;
 
                 if (rangeContainsOriginalOccurence && j == 0) {
                     id = event.id
                 }
                 const newEvent: CalendarEvent = {
-                        id: id,
-                        start: datesToPlaceEvents[j].toString() + "T" + event.start.slice(11),
-                        end: datesToPlaceEvents[j].add(eventDuration).toString() + "T" + event.end.slice(11),
+                    id: id,
+                    start: datesToPlaceEvents[j].toString() + "T" + event.start.slice(11),
+                    end: datesToPlaceEvents[j].add(eventDuration).toString() + "T" + event.end.slice(11),
                     userId: userId,
                     title: event.title,
                     allDay: event.allDay,
@@ -73,7 +73,7 @@ async function getEvents(start: string, end: string, userId: any): Promise<Calen
                         guests: event.extendedProps.guests,
                         recurrence: event.extendedProps.recurrence,
                     }
-            }
+                }
                 allEvents.push(newEvent)
             }
         }
@@ -83,8 +83,11 @@ async function getEvents(start: string, end: string, userId: any): Promise<Calen
 }
 
 async function deleteEvent(id: string, userId: any): Promise<void> {
+    //TODO: if deleting fake event (check if event starts with 'recurr' (recurring ghost):
+    //find master event by stripping recurrence id signals
+    //modify master event's recurrence rule:
+    //skip this occurence or end recurrence on this instance (since exlclusive, will end before this instance)
     await eventStorage.deleteEvent(id, userId)
-
 }
 
 //                          helper functions
@@ -140,17 +143,25 @@ function expandRecurrence(rule: recurrence, requestedStart: Temporal.PlainDate, 
     //separate by big branches: frequency
     const possibleDates = []
     let stepSize = 1
+    let recurrenceEndDate: Temporal.PlainDate;
+    const recurrenceRuleEnd = rule.endDate ? Temporal.PlainDate.from(rule.endDate) : undefined
+    //recurrence rule has end date, and recurrence rule's end date before requested end
+    if (rule.endDate && Temporal.PlainDate.compare(recurrenceRuleEnd, requestedEnd) < 0) recurrenceEndDate = recurrenceRuleEnd
+    else recurrenceEndDate = requestedEnd
+
     if (rule.frequency == "daily") {
         //daily rule only has to deal with skipinterval
         if (rule.skipInterval) stepSize += rule.skipInterval
         const daysFromRangeStart = originalEventDate.until(requestedStart).days //number of days to REACH start (so inclusive)
         const jumpsNeeded = Math.max(0, Math.ceil(daysFromRangeStart / stepSize))//reach first occurence wihin range
         let currentDate = originalEventDate.add({days: jumpsNeeded * stepSize}) //first occurence
-        while (Temporal.PlainDate.compare(currentDate, requestedEnd) < 0) {
+        while (Temporal.PlainDate.compare(currentDate, recurrenceEndDate) < 0) {
             possibleDates.push(currentDate)
             currentDate = currentDate.add({days: stepSize})
         }
+
     } else if (rule.frequency == "weekly") {
+        if (rule.skipInterval) stepSize = rule.skipInterval * 7 + 7 //default stepsize is 7 for a week, and then skip additional 7d if skipinterval 1
 
     } else if (rule.frequency == "monthly") {
 
