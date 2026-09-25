@@ -155,13 +155,30 @@ function expandRecurrence(rule: recurrence, requestedStart: Temporal.PlainDate, 
         const daysFromRangeStart = originalEventDate.until(requestedStart).days //number of days to REACH start (so inclusive)
         const jumpsNeeded = Math.max(0, Math.ceil(daysFromRangeStart / stepSize))//reach first occurence wihin range
         let currentDate = originalEventDate.add({days: jumpsNeeded * stepSize}) //first occurence
+
         while (Temporal.PlainDate.compare(currentDate, recurrenceEndDate) < 0) {
             possibleDates.push(currentDate)
             currentDate = currentDate.add({days: stepSize})
         }
 
     } else if (rule.frequency == "weekly") {
-        if (rule.skipInterval) stepSize = rule.skipInterval * 7 + 7 //default stepsize is 7 for a week, and then skip additional 7d if skipinterval 1
+        if (rule.skipInterval) stepSize = rule.skipInterval * 7 + 7 // skip 7d * skipInterval if skipinterval, and add default stepsize, 7 for a week
+        else stepSize = 7
+
+        //separate into only 1 day or multiple days:
+        if (rule.dayOfWeek.length == 1) {
+            //find first occurence of dayOfWeek after startDate regardless of skipInterval
+            const targetWeekday = rule.dayOfWeek[0] // 1 = Monday, 7 = Sunday
+            const daysUntil = (targetWeekday - originalEventDate.dayOfWeek + 7) % 7
+            let currentDate = originalEventDate.add({days: daysUntil}) //first occurence
+            while (Temporal.PlainDate.compare(currentDate, recurrenceEndDate) < 0) {
+                possibleDates.push(currentDate)
+                currentDate = currentDate.add({days: stepSize})
+            }
+
+        } else if (rule.dayOfWeek.length > 1) {
+
+        }
 
     } else if (rule.frequency == "monthly") {
 
