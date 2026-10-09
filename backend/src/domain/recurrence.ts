@@ -1,6 +1,6 @@
 export interface recurrence {
     frequency: string; //daily, weekly, monthly, yearly
-    dayOfWeek?: number[] //if the recurrence depends on weekday instead of days, pick which weekday. 1-7 numbered (mon first)
+    dayOfWeek?: number[] //if the recurrence depends on weekday instead of days, pick which weekday. 1-7 numbered (mon first) (increasing order)
 
     days?: number[] //nº of days after the beginning of the frequency unit: 0 days would be sunday for week, 1st of the month etc. from end, -1 would be last day
     skipInterval?: number; //if monthly: (monthly + skipinterval 1: every other month)  if weekly + weekday + skipint 2, every 3rd {weekday}
@@ -72,7 +72,7 @@ case 4: occurences within particular month skipIntervals:
 rule with position:
 position: 1
 dayOfWeek: all weekdays
-interpretation: select the first weekday of the month
+interpretation: select the first weekday of the month/year
 
 rule with multiplePositions:
 multiplePositions: [1,3]
