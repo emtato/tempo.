@@ -154,6 +154,10 @@ function expandRecurrence(rule: recurrence, requestedStart: Temporal.PlainDate, 
     const possibleDates = []
     let stepSize = 1
 
+    let recurrenceStartDate: Temporal.PlainDate; // synced start date for those who need it (if recurrence rule doesnt depend remembering alternating thinhs, ie no skipinterval or multiplepositions)
+    if (Temporal.PlainDate.compare(requestedStart, originalEventDate) < 0) recurrenceStartDate = originalEventDate // requested start before event start, so set synced start as event start
+    else recurrenceStartDate = requestedStart
+
     let recurrenceEndDate: Temporal.PlainDate;
     const recurrenceRuleEnd = rule.endDate ? Temporal.PlainDate.from(rule.endDate) : undefined
     //recurrence rule has end date, and recurrence rule's end date before requested end
@@ -209,6 +213,35 @@ function expandRecurrence(rule: recurrence, requestedStart: Temporal.PlainDate, 
         }
 
     } else if (rule.frequency == "monthly") {
+        // recurrence.ts case 1: "last {dayofWeek}/{weekday/weekend} of the month"
+        if (rule.dayOfWeek != undefined && (rule.position != undefined || rule.multiplePositions != undefined)) {
+            if (rule.position != undefined && rule.multiplePositions == undefined) {
+                let firstOccurence = originalEventDate;
+                while (Temporal.PlainDate.compare(firstOccurence, requestedStart) < 0) { // origevent befor requested start. loop skips until our instance is after req start.
+                    firstOccurence = firstOccurence.add({months: 1 + (rule.skipInterval ?? 0)}) // go to the next occurrence month and compare
+                }
+                if (rule.position > 0) {
+                    let position = rule.position;
+                    let nonefound = true
+                    let FO_firstDayOfMonth = Temporal.PlainDate.from(firstOccurence.day + '-' + firstOccurence.month + '-' + firstOccurence.year);
+                    while (nonefound) {
+                        const dayOfWeek = FO_firstDayOfMonth.dayOfWeek; //start at 1st of month, check dayofweek
+                        if (rule.dayOfWeek.includes(dayOfWeek)) { //if dayofweek is in list, we found our correct dayofweek candidate, now just need to skip to the nth occurence of it via position
+                            nonefound = false
+                            while (position != 1) {
+                                position--;
+                                FO_firstDayOfMonth = FO_firstDayOfMonth.add({days: 7}) //TODO: DONT add 7 here, add whatever gap is to the next date in dayofweek.  thus also, positoin shouldnt be minused every iteration, only when the loop of dayofwek is used up once.
+                            }
+                            possibleDates.push(FO_firstDayOfMonth) //if position and not multiplepositions, we only need to push the first occurence. done
+                        } // TODO: possibledates doesnt end here, needs to keep adding more month * skipinterval until we exceed end range
+                        FO_firstDayOfMonth = FO_firstDayOfMonth.add({days: 1}) // increment day if not in dayofweek, test other candidate
+                    }
+                }
+                //recurrence case 1. b) (instead of only 1 event per recurrence rule result, 1st and 2nd wednesday using multiplePositions: [1,2] for example. or 1st and 1st monday and tuesday with [1,2] too.
+            } else if (rule.position == undefined && rule.multiplePositions != undefined) {
+
+            }
+        }
 
     } else if (rule.frequency == "yearly") {
 
