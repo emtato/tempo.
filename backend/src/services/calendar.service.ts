@@ -172,20 +172,7 @@ function expandRecurrence(rule: recurrence, requestedStart: Temporal.PlainDate, 
         if (rule.skipInterval) stepSize = rule.skipInterval * 7 + 7 // skip 7d * skipInterval if skipinterval, and add default stepsize, 7 for a week
         else stepSize = 7
 
-        //separate into only 1 day or multiple days:
-        if (rule.dayOfWeek.length == 1) {
-            //find first occurence of dayOfWeek after startDate regardless of skipInterval
-            const targetWeekday = rule.dayOfWeek[0] // 1 = Monday, 7 = Sunday
-            const daysUntil = (targetWeekday - originalEventDate.dayOfWeek + 7) % 7
-
-            //in case requestedStart is after originalEventDate, we need to do jumpies
-            let testFirstOccurence = originalEventDate.add({days: daysUntil}) //tentative first occurence
-            const daysFromRangeStart = testFirstOccurence.until(requestedStart).days
-            const jumpsNeeded = Math.max(0, Math.ceil(daysFromRangeStart / stepSize))
-
-            const currentDate = originalEventDate.add({days: jumpsNeeded * stepSize + daysUntil}) //first occurence: jumps (if aplicable) + nº days to reach dayofWeek
-            collectOccurrences(possibleDates, currentDate, recurrenceEndDate, date => date.add({days: stepSize}))
-        } else if (rule.dayOfWeek.length > 1) { //event occurs on multiple days of the week
+        if (rule.dayOfWeek.length > 0) { // array isnt empty
             let smallestDaysUntil = 8; //find the smallest amount of days until the first occurence of any day in dayOfWeek
             let smallestDaysUntilIndex = 0; //record which dayOfWeek is first
             let cycleDayGaps = []; // get the amount of days jump per gap in the dayOfWeek array
