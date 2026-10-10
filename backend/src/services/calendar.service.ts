@@ -138,6 +138,16 @@ export const calendarService = {
 };
 
 // RECURRENCE sorry for yelling functions
+
+//the same while loop in every section to add the dates recur on to list
+function collectOccurrences(dates: Temporal.PlainDate[], firstDate: Temporal.PlainDate, endDate: Temporal.PlainDate, nextDate: (date: Temporal.PlainDate) => Temporal.PlainDate): void {
+    let currentDate = firstDate
+    while (Temporal.PlainDate.compare(currentDate, endDate) < 0) {
+        dates.push(currentDate)
+        currentDate = nextDate(currentDate)
+    }
+}
+
 // Which calendar dates inside this requested range satisfy this rule?
 function expandRecurrence(rule: recurrence, requestedStart: Temporal.PlainDate, requestedEnd: Temporal.PlainDate, originalEventDate: Temporal.PlainDate): Temporal.PlainDate[] {
     //separate by big branches: frequency
@@ -155,12 +165,8 @@ function expandRecurrence(rule: recurrence, requestedStart: Temporal.PlainDate, 
         if (rule.skipInterval) stepSize += rule.skipInterval
         const daysFromRangeStart = originalEventDate.until(requestedStart).days //number of days to REACH start (so inclusive)
         const jumpsNeeded = Math.max(0, Math.ceil(daysFromRangeStart / stepSize))//reach first occurence wihin range
-        let currentDate = originalEventDate.add({days: jumpsNeeded * stepSize}) //first occurence
-
-        while (Temporal.PlainDate.compare(currentDate, recurrenceEndDate) < 0) {
-            possibleDates.push(currentDate)
-            currentDate = currentDate.add({days: stepSize})
-        }
+        const currentDate = originalEventDate.add({days: jumpsNeeded * stepSize}) //first occurence
+        collectOccurrences(possibleDates, currentDate, recurrenceEndDate, date => date.add({days: stepSize}))
 
     } else if (rule.frequency == "weekly") {
         if (rule.skipInterval) stepSize = rule.skipInterval * 7 + 7 // skip 7d * skipInterval if skipinterval, and add default stepsize, 7 for a week
@@ -177,11 +183,8 @@ function expandRecurrence(rule: recurrence, requestedStart: Temporal.PlainDate, 
             const daysFromRangeStart = testFirstOccurence.until(requestedStart).days
             const jumpsNeeded = Math.max(0, Math.ceil(daysFromRangeStart / stepSize))
 
-            let currentDate = originalEventDate.add({days: jumpsNeeded * stepSize + daysUntil}) //first occurence: jumps (if aplicable) + nº days to reach dayofWeek
-            while (Temporal.PlainDate.compare(currentDate, recurrenceEndDate) < 0) {
-                possibleDates.push(currentDate)
-                currentDate = currentDate.add({days: stepSize})
-            }
+            const currentDate = originalEventDate.add({days: jumpsNeeded * stepSize + daysUntil}) //first occurence: jumps (if aplicable) + nº days to reach dayofWeek
+            collectOccurrences(possibleDates, currentDate, recurrenceEndDate, date => date.add({days: stepSize}))
         } else if (rule.dayOfWeek.length > 1) { //event occurs on multiple days of the week
             let smallestDaysUntil = 8; //find the smallest amount of days until the first occurence of any day in dayOfWeek
             let smallestDaysUntilIndex = 0; //record which dayOfWeek is first
@@ -211,11 +214,11 @@ function expandRecurrence(rule: recurrence, requestedStart: Temporal.PlainDate, 
                 currentDate = currentDate.add({days: cycleDayGaps[cycleDayGapIndex]})
                 cycleDayGapIndex = (cycleDayGapIndex + 1) % cycleDayGaps.length
             }
-            while (Temporal.PlainDate.compare(currentDate, recurrenceEndDate) < 0) {
-                possibleDates.push(currentDate)
-                currentDate = currentDate.add({days: cycleDayGaps[cycleDayGapIndex]}) //increment current date to next date in dayofweek list by adding the gap between this dayofweek to next
-                cycleDayGapIndex = (cycleDayGapIndex + 1) % cycleDayGaps.length;
-            }
+            collectOccurrences(possibleDates, currentDate, recurrenceEndDate, date => {
+                const next = date.add({days: cycleDayGaps[cycleDayGapIndex]}) //increment current date to next date in dayofweek list by adding the gap between this dayofweek to next
+                cycleDayGapIndex = (cycleDayGapIndex + 1) % cycleDayGaps.length
+                return next
+            })
         }
 
     } else if (rule.frequency == "monthly") {
