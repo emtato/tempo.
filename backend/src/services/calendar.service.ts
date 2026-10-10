@@ -171,7 +171,13 @@ function expandRecurrence(rule: recurrence, requestedStart: Temporal.PlainDate, 
             //find first occurence of dayOfWeek after startDate regardless of skipInterval
             const targetWeekday = rule.dayOfWeek[0] // 1 = Monday, 7 = Sunday
             const daysUntil = (targetWeekday - originalEventDate.dayOfWeek + 7) % 7
-            let currentDate = originalEventDate.add({days: daysUntil}) //first occurence
+
+            //in case requestedStart is after originalEventDate, we need to do jumpies
+            let testFirstOccurence = originalEventDate.add({days: daysUntil}) //tentative first occurence
+            const daysFromRangeStart = testFirstOccurence.until(requestedStart).days
+            const jumpsNeeded = Math.max(0, Math.ceil(daysFromRangeStart / stepSize))
+
+            let currentDate = originalEventDate.add({days: jumpsNeeded * stepSize + daysUntil}) //first occurence: jumps (if aplicable) + nº days to reach dayofWeek
             while (Temporal.PlainDate.compare(currentDate, recurrenceEndDate) < 0) {
                 possibleDates.push(currentDate)
                 currentDate = currentDate.add({days: stepSize})
@@ -191,10 +197,20 @@ function expandRecurrence(rule: recurrence, requestedStart: Temporal.PlainDate, 
                     cycleDayGaps.push(rule.dayOfWeek[i] - rule.dayOfWeek[i - 1])
                 }
             }
-            cycleDayGaps.push(7 - cycleDayGaps.reduce((accumulator, currentValue) => accumulator + currentValue, 0)) //add the gap between last dayOfWeek vs first (loop wrap)
+            cycleDayGaps.push(7 + (rule.skipInterval ?? 0) * 7 - cycleDayGaps.reduce((accumulator, currentValue) => accumulator + currentValue, 0)) //add the gap between last dayOfWeek vs first (loop wrap)
 
-            let currentDate = originalEventDate.add({days: smallestDaysUntil}) //first occurence
+            //in case requestedStart is after originalEventDate, we need to do jumpies
+            const firstOccurrence = originalEventDate.add({days: smallestDaysUntil}) //first occurence before factoring requestedStart
+            const daysFromRangeStart = firstOccurrence.until(requestedStart).days
+            const completeCycles = Math.max(0, Math.floor(daysFromRangeStart / stepSize))
+
+            let currentDate = firstOccurrence.add({days: completeCycles * stepSize}) // add complete cycles (that include skipinterval logic) until we are right before requestedStart
             let cycleDayGapIndex = smallestDaysUntilIndex;
+
+            while (Temporal.PlainDate.compare(currentDate, requestedStart) < 0) { // cycle thruthe rest of cycledaygaps manually until we get to the first one after requestedstart
+                currentDate = currentDate.add({days: cycleDayGaps[cycleDayGapIndex]})
+                cycleDayGapIndex = (cycleDayGapIndex + 1) % cycleDayGaps.length
+            }
             while (Temporal.PlainDate.compare(currentDate, recurrenceEndDate) < 0) {
                 possibleDates.push(currentDate)
                 currentDate = currentDate.add({days: cycleDayGaps[cycleDayGapIndex]}) //increment current date to next date in dayofweek list by adding the gap between this dayofweek to next
