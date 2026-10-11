@@ -356,35 +356,33 @@ export default function Popup({
 
     function generateRepetitionOptions(): recurrence[] {
         let options: recurrence[] = []
-        const none: recurrence = {frequency: "none", startDate: selectedStartDate}
+        const none: recurrence = {frequency: "none"}
         options.push(none)
-        const everyDayRecurrence: recurrence = {frequency: "daily", startDate: selectedStartDate}
+        const everyDayRecurrence: recurrence = {frequency: "daily"}
         options.push(everyDayRecurrence)
-        const everyOtherDay: recurrence = {frequency: "daily", skipInterval: 1, startDate: selectedStartDate}
+        const everyOtherDay: recurrence = {frequency: "daily", skipInterval: 1}
         options.push(everyOtherDay)
 
         const dateObj = Temporal.PlainDate.from(selectedStartDate)
         const weekday = dateObj.dayOfWeek //1-7
-        let repeatEveryWeek: recurrence = {frequency: "weekly", dayOfWeek: [weekday], startDate: selectedStartDate} //ex: every monday
-        let everyOtherWeek: recurrence = {
-            frequency: "weekly", dayOfWeek: [weekday], skipInterval: 1, startDate: selectedStartDate
-        }
+        let repeatEveryWeek: recurrence = {frequency: "weekly", dayOfWeek: [weekday]} //ex: every monday
+        let everyOtherWeek: recurrence = {frequency: "weekly", dayOfWeek: [weekday], skipInterval: 1}
         options.push(repeatEveryWeek)
         options.push(everyOtherWeek)
 
         let weekRules: recurrence //every weekday/weekend (depending on its week day / weekend status)
         if (weekday < 6) { //weekday
-            weekRules = {startDate: selectedStartDate, frequency: "weekly", dayOfWeek: [1, 2, 3, 4, 5]}
+            weekRules = {frequency: "weekly", dayOfWeek: [1, 2, 3, 4, 5]}
         } else {
-            weekRules = {frequency: "weekly", dayOfWeek: [6, 7], startDate: selectedStartDate}
+            weekRules = {frequency: "weekly", dayOfWeek: [6, 7]}
         }
         options.push(weekRules)
 
         const date = parseInt(selectedStartDate.split("-")[2]) - 1
-        let repeatEveryMonth: recurrence = {frequency: "monthly", days: [date], startDate: selectedStartDate} //every xth of the month
+        let repeatEveryMonth: recurrence = {frequency: "monthly", days: [date]} //every xth of the month
         options.push(repeatEveryMonth)
 
-        const repeatEveryYear: recurrence = {frequency: "yearly", days: [date], startDate: selectedStartDate}
+        const repeatEveryYear: recurrence = {frequency: "yearly", days: [date]}
         options.push(repeatEveryYear)
 
         // if (selectedStartDate != selectedEndDate) {
@@ -787,7 +785,7 @@ function UserAccountControl({setAuthOpen, onUserMenuOpen, user, minimized}: User
         }
     } else {
         if (!user) {
-            return <button className="sidebar-icon-button       " type='button' onClick={setAuthOpen}><img
+            return <button className="sidebar-icon-button" type='button' onClick={setAuthOpen}><img
                 className="sidebar-icon"
                 src={icons["./sidebar-guest.png"]}
                 alt=""
