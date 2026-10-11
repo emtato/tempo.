@@ -359,27 +359,52 @@ h2 {
     margin-bottom: 0.6em;
 }
 
+.sidebar-chat-composer {
+    position: relative;
+}
+
 .sidebar-chat {
+    display: block;
     color: white;
     font-size: 1em;
     font-weight: 500;
-    min-height: 4.8em;
     box-sizing: border-box;
-    padding: 0.85em 1em;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 0.28em;
+    width: 100%;
     background: var(--colour-purple-medium);
     border-radius: 0.86em;
-    box-shadow: 0 12px 30px rgba(60, 64, 67, 0.18),
-    0 4px 10px rgba(60, 64, 67, 0.1);
+    box-shadow: 0 12px 30px rgba(60, 64, 67, 0.18), 0 4px 10px rgba(60, 64, 67, 0.1);
+    border: none;
+    height: auto;
+    overflow-y: hidden;
+    padding: 1em 3.7em 1em 1em;
 }
 
-.sidebar-chat span {
-    color: rgba(255, 255, 255, 0.78);
-    font-size: 0.9em;
+.sidebar-chat-send {
+    position: absolute;
+    right: 0.6em;
+    bottom: 0.6em;
+    display: grid;
+    place-items: center;
+    width: 2.2em;
+    height: 2.2em;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: white;
+    color: var(--colour-purple-extra-dark);
+    cursor: pointer;
 }
+
+.send-text {
+    font-size: 1.2em;
+}
+
+.sidebar-chat-send:hover {
+    background: #e1dfe6;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
+}
+
 
 /* Minimized sidebar */
 

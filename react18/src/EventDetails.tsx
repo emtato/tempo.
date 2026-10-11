@@ -349,7 +349,7 @@ export default function Popup({
 
     function repetitionPicked(option: recurrence) {
         setRepetitionObject(option)
-        if(option.frequency == "none"){
+        if (option.frequency == "none") {
             setRepetitionObject(undefined)
         }
     }
@@ -808,6 +808,11 @@ function UserAccountControl({setAuthOpen, onUserMenuOpen, user, minimized}: User
 }
 
 export function Sidebar({isOpen, onClose, setAuthOpen, onUserMenuOpen, user}: SidebarInfo) {
+    const [chatQuery, setChatQuery] = useState("")
+
+    function handleSendMessage() {
+    }
+
     if (!isOpen) {
         return null
     }
@@ -883,13 +888,26 @@ export function Sidebar({isOpen, onClose, setAuthOpen, onUserMenuOpen, user}: Si
                     </ul>
                 </div>
                 <div className='sidebar-assistant-preview'>
-                    <h2>Scheduling assistant</h2>
-                    <div className='sidebar-chat'>
-                        <strong>Planning preview</strong>
-                        <span>
-                            Future versions will turn requests like <q>Plan two hours of study before dinner</q>
-                            into editable calendar suggestions.
-                        </span>
+                    <p>Scheduling assistant: Future versions will turn requests like <q>Plan two hours of study before
+                        dinner</q>
+                        into editable calendar suggestions.</p>
+                    <div className='sidebar-chat-composer'>
+                        <textarea
+                            className='sidebar-chat' rows={1}
+                            value={chatQuery}
+                            onInput={(event) => {
+                                const textarea = event.currentTarget
+                                textarea.style.height = 'auto'
+                                textarea.style.height = `${textarea.scrollHeight}px` //auto adjust height
+                                setChatQuery(textarea.value)
+                            }}
+                        />
+                        {chatQuery !== '' && (
+                            <button className='sidebar-chat-send' type='button' aria-label='Send message'
+                                    onClick={handleSendMessage}>
+                              <strong className="send-text">↑</strong>
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
