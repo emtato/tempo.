@@ -538,7 +538,7 @@ h2 {
     gap: 2px;
     padding: 3px;
     border: 1px solid #d4d1d9;
-    border-radius: 14px;
+    border-radius: 999em;
     background: #bfbbc7;
 }
 
@@ -555,7 +555,16 @@ h2 {
     transition: filter 0.3s ease;
 }
 
+.calendar-nav-arrow:first-child {
+    border-radius: 999em 999em 999em 999em;
+}
+
+.calendar-nav-arrow:last-child {
+    border-radius: 999em 999em 999em 999em;
+}
+
 .calendar-nav-arrow:hover {
+    background: #bfbbc7;
     filter: brightness(1.2);
 }
 
@@ -571,6 +580,7 @@ h2 {
 }
 
 .calendar-today-button:hover {
+    background: #dedbe7;
     filter: brightness(1.2);
 }
 
@@ -579,7 +589,7 @@ h2 {
     border: 1px solid #b7b4c2;
     border-radius: 999px;
     background: #d1d0d8;
-    box-shadow: none;
+    gap: 2px;
 }
 
 .calendar-wide-view-button {
