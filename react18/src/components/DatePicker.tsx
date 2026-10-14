@@ -53,6 +53,12 @@ export default function DatePicker(props: DatePickerProps) {
     }
 
     return (<span className="DatePicker"
+                  onKeyDown={(event) => {
+                      if (event.key === "Escape" && isOpen) {
+                          event.stopPropagation();
+                          setIsOpen(false);
+                      }
+                  }}
                   onBlur={(event) => { //lose focus
                       if (!event.currentTarget.contains(event.relatedTarget as Node)) {
                           setIsOpen(false);

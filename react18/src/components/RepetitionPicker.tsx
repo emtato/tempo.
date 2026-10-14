@@ -71,6 +71,12 @@ export default function RepetitionPicker(props: RepetitionPickerProps) {
     }
 
     return (<span className="DatePicker"
+                  onKeyDown={(event) => {
+                      if (event.key === "Escape" && isOpen) {
+                          event.stopPropagation();
+                          setIsOpen(false);
+                      }
+                  }}
                   onBlur={(event) => { //lose focus
                       if (!event.currentTarget.contains(event.relatedTarget as Node)) {
                           setIsOpen(false);

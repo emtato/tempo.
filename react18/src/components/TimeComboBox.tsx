@@ -151,6 +151,13 @@ export default function TimeComboBox(props: TimeComboBoxProps) {
 
     return (
         <span className="time-combobox-wrapper"
+              onKeyDown={(event) => {
+                  if (event.key === "Escape" && isOpen) {
+                      event.stopPropagation();
+                      setDraftText(formatTime(props.value, false));
+                      setIsOpen(false);
+                  }
+              }}
               onBlur={(event) => {
                   const nextFocusedElement = event.relatedTarget;
 
