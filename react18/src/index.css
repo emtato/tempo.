@@ -33,6 +33,7 @@
     --colour-purple-dark: #625b72;
     --colour-purple-medium: #6f697f;
     --colour-purple-light: #948f9f;
+    --colour-purple-lighter: #ede7f5;
     --colour-purple-vibrant: #6f5fa7;
     --colour-purple-extra-dark: #514a69;
     --colour-off-white: #fdfdfd;
@@ -684,11 +685,11 @@ h2 {
     height: max(36.5em, 486.75px);
     box-sizing: border-box;
     padding: 2em 2em 1.7em;
-    border: 0.15em solid var(--colour-border);
+    border: 0.1em solid #e4dfea;
     border-radius: 2.14em;
-    background: var(--colour-off-white);
-    box-shadow: 0 0.85em 2.15em rgba(60, 64, 67, 0.2),
-    0 0.3em 0.70em rgba(60, 64, 67, 0.1);
+    background: linear-gradient(180deg, #fff 0%, #fdfcff 65%, #faf8fe 100%);
+    box-shadow: 0 1em 2.5em rgba(48, 40, 68, 0.22),
+    0 0.3em 0.7em rgba(48, 40, 68, 0.09);
     color: var(--colour-text);
 }
 
@@ -741,8 +742,7 @@ h2 {
     padding: 12px 12px 12px 18px;
     border-radius: 14px;
     background: var(--colour-purple-light);
-    box-shadow: 0 8px 24px rgba(60, 64, 67, 0.24),
-    0 2px 8px rgba(60, 64, 67, 0.16);
+    box-shadow: 0 8px 24px rgba(60, 64, 67, 0.24), 0 2px 8px rgba(60, 64, 67, 0.16);
     color: white;
     transform: translateX(-50%);
 }
@@ -785,7 +785,7 @@ h2 {
 /* Popup content layout */
 
 .event-content {
-    margin-top: 5em;
+    margin-top: 4.4em;
     padding: 0 1.29em;
 }
 
@@ -820,7 +820,8 @@ h2 {
 }
 
 .close-button:hover {
-    background: var(--colour-hover-grey);
+    background: var(--colour-purple-lighter);
+    color: var(--colour-purple-extra-dark);
 }
 
 /* Popup form rows and text fields */
@@ -830,7 +831,7 @@ h2 {
     padding: 0.2em 0 0.25em;
     margin-bottom: 0.9em;
     border: none;
-    border-bottom: 0.2em solid var(--colour-purple-vibrant);
+    border-bottom: 0.14em solid var(--colour-purple-vibrant);
     outline: none;
     background: transparent;
     color: var(--colour-text);
@@ -850,7 +851,12 @@ h2 {
     width: 100%;
     border: none;
     outline: none;
+    background: transparent;
     font: inherit;
+}
+
+.guests_location-input:focus-visible, .description-input:focus-visible {
+    box-shadow: 0 2px 0 var(--colour-purple-vibrant);
 }
 
 .description-row .row-icon {
@@ -878,6 +884,14 @@ h2 {
     gap: 0.57em;
 }
 
+.schedule-row {
+    margin-inline: -1em;
+    padding: 0.65em 1em;
+    border: 1px solid var(--colour-purple-lighter);
+    border-radius: 1.1em;
+    background: #f6f3fa;
+}
+
 .row-icon {
     color: var(--colour-neutral-grey);
     font-size: 1.29em;
@@ -900,23 +914,40 @@ h2 {
     font-size: 0.86em;
 }
 
-.all-day-option {
-    display: inline-flex;
+.schedule-options {
+    display: flex;
     align-items: center;
-    margin-left: min(6vw, 1.5em);
-    gap: 0.57em;
+    justify-content: space-between;
+    margin-top: 0.2em;
+}
+
+.all-day-option, .repeat-button {
+    padding: 0.35em 1em;
+    border: 1px solid var(--colour-purple-lighter);
+    border-radius: 999em;
+    background: white;
+    color: var(--colour-purple-extra-dark);
+    font: inherit;
+    font-size: 0.85em;
+    font-weight: 700;
+    line-height: 1.2;
     white-space: nowrap;
-    color: var(--colour-text);
     cursor: pointer;
 }
 
-.all-day-option input {
-    width: 1.29em;
-    height: 1.29em;
-    margin: 0;
-    font: inherit;
-    accent-color: var(--colour-purple-vibrant);
-    cursor: pointer;
+.all-day-option[aria-pressed='true'] {
+    border-color: var(--colour-purple-vibrant);
+    background: var(--colour-purple-vibrant);
+    color: white;
+}
+
+.all-day-option:hover, .repeat-button:hover {
+    filter: brightness(1.1);
+}
+
+.all-day-option:focus-visible, .repeat-button:focus-visible {
+    outline: 2px solid var(--colour-purple-vibrant);
+    outline-offset: 2px;
 }
 
 /* Time controls */
@@ -1018,15 +1049,8 @@ h2 {
 .time-combobox-input {
     width: 2.71em;
     border: none;
-    font-size: 1em;
-}
-
-.repeat-button {
-    color: var(--colour-neutral-grey);
-    font-size: 0.86em;
-    border: transparent;
     background: transparent;
-    cursor: pointer;
+    font-size: 1em;
 }
 
 /* date options */
@@ -1163,8 +1187,15 @@ h2 {
     align-items: center;
     width: max-content;
     gap: 0.57em;
+    padding: 0.25em 0.75em;
+    border-radius: 999em;
+    background: #f1eef7;
     color: var(--colour-text);
     cursor: pointer;
+}
+
+.calendar-select:hover {
+    background: #eae4f4;
 }
 
 .calendar-select select {
@@ -1201,7 +1232,7 @@ h2 {
     justify-content: flex-end;
     align-items: center;
     gap: 2em;
-    margin-top: 2.5em;
+    margin-top: 1.2em;
 }
 
 .delete-button {
@@ -1236,12 +1267,18 @@ h2 {
 }
 
 .text-button {
+    padding: 0.5em 0.7em;
     border: none;
+    border-radius: 999em;
     background: transparent;
     color: var(--colour-purple-vibrant);
     font: inherit;
     font-weight: 600;
     cursor: pointer;
+}
+
+.text-button:hover {
+    background: #f0ecf7;
 }
 
 .save-button {
@@ -1253,6 +1290,7 @@ h2 {
     font: inherit;
     font-weight: 600;
     cursor: pointer;
+    box-shadow: 0 0.3em 0.7em rgba(95, 79, 149, 0.2);
 }
 
 .save-button:hover {

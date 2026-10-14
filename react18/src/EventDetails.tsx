@@ -603,7 +603,7 @@ export default function Popup({
                                 handleTitleInputChange(simpleTimeLocationExtractor(input, selectedStartDate, startTime))
                             }}
                         />
-                        <div className="form-row">
+                        <div className="form-row schedule-row">
                             <img
                                 className="popup-field-icon"
                                 src={icons["./popup-date-time.png"]}
@@ -657,21 +657,22 @@ export default function Popup({
                                                 setEndTime((currentTime) => toggleAmPm(currentTime))
                                             }}>
                                             {getAmPm(endTime)}
-                                        </button><label className="all-day-option">
-                                        <input
-                                            type="checkbox"
-                                            checked={allday}
-                                            onChange={(event) => {
-                                                setAllday(event.target.checked);
-                                            }}
-                                        />
-                                        <span>All day</span>
-                                    </label>
+                                        </button>
                                     </span>
                                 </div>
-                                <RepetitionPicker onChange={repetitionPicked}
-                                                  options={generateRepetitionOptions()}
-                                                  repetitionObject={repetitionObject}></RepetitionPicker>
+                                <div className="schedule-options">
+                                    <RepetitionPicker onChange={repetitionPicked}
+                                                      options={generateRepetitionOptions()}
+                                                      repetitionObject={repetitionObject}></RepetitionPicker>
+                                    <button
+                                        className="all-day-option"
+                                        type="button"
+                                        aria-pressed={allday}
+                                        onClick={() => setAllday((current) => !current)}
+                                    >
+                                        All day
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         <div className="form-row">
