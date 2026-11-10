@@ -19,6 +19,8 @@ import {Temporal} from 'temporal-polyfill'
 
 async function saveEvent(input: SaveCalendarEventInput, userId: any): Promise<CalendarEvent> {
     //TODO: gemini first pass layer to extract advanced location/time data first
+    // TODO: Use the shared recurrence validator before saving. Validate any rule
+    // returned by Gemini before using it, so invalid output can be retried.
     if (input.allDay) {
         input.endDate = addOneDay(input.endDate)
     }
@@ -34,6 +36,7 @@ async function saveEvent(input: SaveCalendarEventInput, userId: any): Promise<Ca
 }
 
 async function restoreEvent(input: SaveCalendarEventInput, userId: any): Promise<CalendarEvent> {
+    // TODO: Validate and normalize the restored recurrence with the same validator before saving.
     if (input.allDay) {
         input.endDate = addOneDay(input.endDate)
     }
@@ -148,7 +151,7 @@ function collectOccurrences(dates: Temporal.PlainDate[], firstDate: Temporal.Pla
     }
 }
 
-// Which calendar dates inside this requested range satisfy this rule?
+// assume recurrence rule is valid since save and restore guarantee this by calling recurrence validation
 function expandRecurrence(rule: recurrence, requestedStart: Temporal.PlainDate, requestedEnd: Temporal.PlainDate, originalEventDate: Temporal.PlainDate): Temporal.PlainDate[] {
     //separate by big branches: frequency
     const possibleDates = []
@@ -215,6 +218,7 @@ function expandRecurrence(rule: recurrence, requestedStart: Temporal.PlainDate, 
     } else if (rule.frequency == "monthly") {
         // recurrence.ts case 1: "last {dayofWeek}/{weekday/weekend} of the month"
         if (rule.dayOfWeek != undefined && (rule.position != undefined || rule.multiplePositions != undefined)) {
+            //only one position (first/2nd/3rd/4th / last/2nd last etc) + dayofweek rule
             if (rule.position != undefined && rule.multiplePositions == undefined) {
                 let firstOccurence = originalEventDate;
                 while (Temporal.PlainDate.compare(firstOccurence, requestedStart) < 0) { // origevent befor requested start. loop skips until our instance is after req start.
