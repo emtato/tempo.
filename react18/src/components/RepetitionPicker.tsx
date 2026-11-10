@@ -17,7 +17,7 @@ const dayToWeekDayMap: Record<number, string> = {
     6: "Saturday",
     7: "Sunday",
 }
-
+//TODO: port behaviour of recurrence working in backend to frontend when logged out
 function treatWeekRep(dayOfWeek: number[], other: boolean) {
     if (dayOfWeek.length > 1) {
         if (dayOfWeek.includes(1) && dayOfWeek.includes(2) && dayOfWeek.includes(3) && dayOfWeek.includes(4) && dayOfWeek.includes(5)) {

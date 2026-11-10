@@ -254,8 +254,7 @@ h2 {
     border: 1px solid rgba(255, 255, 255, 0.19);
     border-radius: 22px;
     line-height: 1.5;
-    background: radial-gradient(circle at 100% 0%, rgba(255, 255, 255, 0.11), transparent 36%),
-    linear-gradient(165deg, #655d78 0%, #554d6b 66%, #504864 100%);
+    background: var(--colour-purple-extra-dark);
     box-shadow: 0 18px 38px rgba(42, 34, 61, 0.22),
     0 3px 8px rgba(42, 34, 61, 0.1);
     color: white;
@@ -474,7 +473,7 @@ h2 {
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.19);
     border-radius: 18px;
-    background: linear-gradient(165deg, #655d78, #504864);
+    background: var(--colour-purple-extra-dark);
     box-shadow: 0 18px 38px rgba(42, 34, 61, 0.22);
     color: white;
 }
@@ -740,10 +739,10 @@ h2 {
     width: min(380px, calc(100vw - 32px));
     box-sizing: border-box;
     padding: 12px 12px 12px 18px;
-    border-radius: 14px;
-    background: var(--colour-purple-light);
-    box-shadow: 0 8px 24px rgba(60, 64, 67, 0.24), 0 2px 8px rgba(60, 64, 67, 0.16);
-    color: white;
+    border-radius: 18px;
+    background: #faf8fe;
+    box-shadow: 0 8px 24px rgba(48, 40, 68, 0.22), 0 2px 6px rgba(48, 40, 68, 0.09);
+    color: var(--colour-text);
     transform: translateX(-50%);
 }
 
@@ -756,8 +755,8 @@ h2 {
     padding: 9px 18px;
     border: none;
     border-radius: 999px;
-    background: #f1eef8;
-    color: var(--colour-purple-dark);
+    background: var(--colour-purple-vibrant);
+    color: white;
     font: inherit;
     font-size: 14px;
     font-weight: 700;
@@ -766,7 +765,7 @@ h2 {
 }
 
 .delete-undo__button:hover {
-    background: white;
+    filter: brightness(120%);
 }
 
 .delete-undo__button:active {
@@ -774,7 +773,7 @@ h2 {
 }
 
 .delete-undo__button:focus-visible {
-    outline: 3px solid rgba(255, 255, 255, 0.8);
+    outline: 2px solid var(--colour-purple-vibrant);
     outline-offset: 2px;
 }
 
