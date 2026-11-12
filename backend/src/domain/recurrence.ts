@@ -70,15 +70,17 @@ case 4: occurences within particular month skipIntervals:
 //to get around this and allow for multiple picks, use multiplePositions?: number[] //selecting all positions of options. positoin only selects one.
 /*difference:
 rule with position:
-position: 1
+position: 2
 dayOfWeek: all weekdays
-interpretation: select the first weekday of the month/year
+interpretation: select the second weekday of the month/year
 
 rule with multiplePositions:
 multiplePositions: [1,3]
 dayOfWeek: monday and thursday
 interpretation: 1st monday of month, 1st thursday of month, 3rd monday of month, 3rd thursday of month
  */
+
+// note: a rule such as "second occurence of any weekday of the month" is currently not implementable sice positions/mutliplepositins selects occurence based on dayofweek list, not occurence after finding a date.
 
 //if startdate isnt the actual first occurence date (for some reason) (startdate: 09/14, every wednesday, first occurence is 9/16.
 //if there is skipinterval + other rules, just find the instance of the date/day ignoring the rules:

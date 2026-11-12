@@ -151,6 +151,22 @@ function collectOccurrences(dates: Temporal.PlainDate[], firstDate: Temporal.Pla
     }
 }
 
+// (sorted weekdays) return list of gaps, number of days to skip to reach each next dayofweek
+function getCycleDayGaps(weekdays: number[], skipInterval?: number): number[] {
+
+    const cycleDayGaps: number[] = []; // get the amount of days jump per gap in the dayOfWeek array
+    for (let i = 1; i < weekdays.length; i++) {
+        cycleDayGaps.push(weekdays[i] - weekdays[i - 1]);
+    }
+    const firstWeekday = weekdays[0];
+    const lastWeekday = weekdays[weekdays.length - 1];
+    const daysAlreadyCovered = lastWeekday - firstWeekday; // cycle length - days covered = remaining days in cycle's period until next first
+    const cycleLength = 7 + (skipInterval ?? 0) * 7;
+
+    cycleDayGaps.push(cycleLength - daysAlreadyCovered); //add the gap between last dayOfWeek vs first (loop wrap)
+    return cycleDayGaps;
+}
+
 // assume recurrence rule is valid since save and restore guarantee this by calling recurrence validation
 function expandRecurrence(rule: recurrence, requestedStart: Temporal.PlainDate, requestedEnd: Temporal.PlainDate, originalEventDate: Temporal.PlainDate): Temporal.PlainDate[] {
     //separate by big branches: frequency
@@ -182,7 +198,7 @@ function expandRecurrence(rule: recurrence, requestedStart: Temporal.PlainDate, 
         if (rule.dayOfWeek.length > 0) { // array isnt empty
             let smallestDaysUntil = 8; //find the smallest amount of days until the first occurence of any day in dayOfWeek
             let smallestDaysUntilIndex = 0; //record which dayOfWeek is first
-            let cycleDayGaps = []; // get the amount of days jump per gap in the dayOfWeek array
+            const cycleDayGaps = getCycleDayGaps(rule.dayOfWeek, rule.skipInterval);
 
             for (let i = 0; i < rule.dayOfWeek.length; i++) {
                 const targetWeekday = rule.dayOfWeek[i]
@@ -190,11 +206,7 @@ function expandRecurrence(rule: recurrence, requestedStart: Temporal.PlainDate, 
                     smallestDaysUntil = (targetWeekday - originalEventDate.dayOfWeek + 7) % 7 // first occurence of any day in dayOfWeek after startDate
                     smallestDaysUntilIndex = i; //update the index of the smallest days until
                 }
-                if (i != 0) {
-                    cycleDayGaps.push(rule.dayOfWeek[i] - rule.dayOfWeek[i - 1])
-                }
             }
-            cycleDayGaps.push(7 + (rule.skipInterval ?? 0) * 7 - cycleDayGaps.reduce((accumulator, currentValue) => accumulator + currentValue, 0)) //add the gap between last dayOfWeek vs first (loop wrap)
 
             //in case requestedStart is after originalEventDate, we need to do jumpies
             const firstOccurrence = originalEventDate.add({days: smallestDaysUntil}) //first occurence before factoring requestedStart
@@ -226,17 +238,22 @@ function expandRecurrence(rule: recurrence, requestedStart: Temporal.PlainDate, 
                 }
                 if (rule.position > 0) {
                     let position = rule.position;
-                    let nonefound = true
-                    let FO_firstDayOfMonth = Temporal.PlainDate.from(firstOccurence.day + '-' + firstOccurence.month + '-' + firstOccurence.year);
+                    let nonefound = true // no matching date found yet :<
+                    let FO_firstDayOfMonth = firstOccurence.with({day: 1}); // return to 1st day of month of firstOccurence's month to start searching
                     while (nonefound) {
                         const dayOfWeek = FO_firstDayOfMonth.dayOfWeek; //start at 1st of month, check dayofweek
                         if (rule.dayOfWeek.includes(dayOfWeek)) { //if dayofweek is in list, we found our correct dayofweek candidate, now just need to skip to the nth occurence of it via position
                             nonefound = false
+                            let currentDayInCycle = rule.dayOfWeek.indexOf(dayOfWeek)
+                            const cycleDayGaps = getCycleDayGaps(rule.dayOfWeek, 0) //skip interval is 0 since in context, it refers to skipping months. now were looking intra month
                             while (position != 1) {
                                 position--;
-                                FO_firstDayOfMonth = FO_firstDayOfMonth.add({days: 7}) //TODO: DONT add 7 here, add whatever gap is to the next date in dayofweek.  thus also, positoin shouldnt be minused every iteration, only when the loop of dayofwek is used up once.
+                                FO_firstDayOfMonth = FO_firstDayOfMonth.add({days: cycleDayGaps[currentDayInCycle]})
+                                currentDayInCycle = (currentDayInCycle + 1) % cycleDayGaps.length
                             }
-                            possibleDates.push(FO_firstDayOfMonth) //if position and not multiplepositions, we only need to push the first occurence. done
+                            if (FO_firstDayOfMonth.month == firstOccurence.month) //make sure were still in samemonth
+                                possibleDates.push(FO_firstDayOfMonth) //if position and not multiplepositions, we only need to push the first occurence. done
+                            break; // found is true so break out of loop. for below TO DO, the reset should reset everything (skip to next month after skipinterval, reset position and nonefound etc
                         } // TODO: possibledates doesnt end here, needs to keep adding more month * skipinterval until we exceed end range
                         FO_firstDayOfMonth = FO_firstDayOfMonth.add({days: 1}) // increment day if not in dayofweek, test other candidate
                     }
